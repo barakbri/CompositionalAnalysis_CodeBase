@@ -1,0 +1,11 @@
+Package: subzero
+Type: Package
+Title: What the Package Does in One 'Title Case' Line
+Version: 1.0
+Date: 2018-07-26
+Author: Barak Brill
+Maintainer: Barak Brill <barakbri@mail.tau.ac.il>
+Description: One paragraph description of what the package does as one or more full sentences.
+License: LGPL2
+Imports: Rcpp (>= 0.12.17),coin
+LinkingTo: Rcpp
