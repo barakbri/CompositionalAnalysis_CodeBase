@@ -12,7 +12,7 @@ REFSIM_generate_NOCOMP_TYPE_Scenario = function(label = "MISSING_LABEL",
                                global_NULL = F,
                                mean_vec = c(rep(200,50),rep(25,150),rep(5,800)),
                                size = 5,
-                               chance_for_structural_zero = 0.3,
+                               chance_for_structural_zero = 0.0,
                                effect_multiplier = 3,
                                select_diff_abundant = c(1)
                                ){
@@ -67,21 +67,24 @@ REFSIM_generate_data_for_NOCOMP_Type_Scenario = function(setting_def){
   Y = c(rep(0,setting_def$n0),rep(1,setting_def$n1))  
   
   multiplier_vec = rep(1,m)
-  if(!global_NULL)
-    multiplier_vec[select_diff_abundant] = effect_multiplier
+  if(!global_NULL){
+    increase_vec = select_diff_abundant[seq(1,to = length(select_diff_abundant),by = 2)]
+    decrease_vec = select_diff_abundant[seq(2,to = length(select_diff_abundant),by = 2)]
+    multiplier_vec[increase_vec] = 1 + effect_multiplier
+    multiplier_vec[decrease_vec] = 1 - effect_multiplier
+  }
+    
   for(i in 1:nrow(X)){
     zeroizer_vec = rbinom(m,1,chance_for_structural_zero)
     if(Y[i]==0){
-      temp_row = rnbinom(m,size = size,mu = lambda_vec)#rpois(m,lambda_vec)  
+      temp_row = rnbinom(m,size = size,mu = lambda_vec) #rpois(m,lambda_vec)  
     }else{#1
       temp_row = rnbinom(m,size = size,mu = multiplier_vec*lambda_vec) #rpois(m,multiplier_vec*lambda_vec)  
-      
     }
     temp_row = (1-zeroizer_vec) * temp_row
     
     X[i,] = temp_row
   }
-  
   
   ret = list()
   ret$X = X

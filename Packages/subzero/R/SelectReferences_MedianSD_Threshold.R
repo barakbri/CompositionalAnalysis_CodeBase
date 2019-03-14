@@ -2,7 +2,7 @@ select.references.Median.SD.Threshold = function(X, median_SD_threshold = 1.3,
                                                            minimal_TA = 10,
                                                            maximal_TA = 200,
                                                            verbose = F,
-                                                           select_from = NULL,Psuedo_Count_used = 1
+                                                           select_from = NULL,Psuedo_Count_used = 10,factor_by_Mean_Score = T
                                                            ){
   
   adjustment = 0
@@ -67,6 +67,7 @@ select.references.Median.SD.Threshold = function(X, median_SD_threshold = 1.3,
   
   mean_prevalence_over_the_sorted = as.numeric(apply(cummulative_sorted_prevalence_mat,2,mean))
   min_abundance_over_the_sorted = as.numeric(apply(cummulative_sorted_X_mat,2,min))
+  
   possible_cut_points = which(min_abundance_over_the_sorted>=minimal_TA & min_abundance_over_the_sorted<=maximal_TA)
   if(length(possible_cut_points) == 0)
     possible_cut_points = min(which(min_abundance_over_the_sorted>=minimal_TA))
@@ -74,7 +75,12 @@ select.references.Median.SD.Threshold = function(X, median_SD_threshold = 1.3,
     possible_cut_points = min(which(min_abundance_over_the_sorted>=1))
   
   scores_possible_cut_points = sorted_scores[possible_cut_points]
-  possible_cut_points_above_threshold = which(scores_possible_cut_points >= median_SD_threshold)
+  
+  threshold_to_use = median_SD_threshold
+  if(factor_by_Mean_Score)
+    threshold_to_use = mean(sorted_scores)*median_SD_threshold
+  
+  possible_cut_points_above_threshold = which(scores_possible_cut_points >= threshold_to_use)
   if(length(possible_cut_points_above_threshold)>0)
     cut_point_selected = possible_cut_points[min(possible_cut_points_above_threshold)]
   else

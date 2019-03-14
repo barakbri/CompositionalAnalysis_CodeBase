@@ -1,5 +1,5 @@
 NR.WORKERS = 7 #63#72-1#63
-SCENARIO_ID = 2
+SCENARIO_ID = 25
 MAINDIR = './'
 Q_LEVEL = 0.1
 
@@ -25,7 +25,6 @@ library(metagenomeSeq)
 source(paste0('Wilcoxon_TaxaWise.R'))
 source(paste0('exactHyperGeometricTest.R'))
 source(paste0('REFSIM_GenerateSettings_Index.R'))
-#source(paste0('../Packages/QMP-master/QMP-master/QMP.R'))
 
 RESULTS_DIR = paste0("../../Results/")
 
@@ -53,11 +52,13 @@ df_selection_method = data.frame(MethodName = NA, is_Oracle = NA, Median_SD_Thre
 df_selection_method[1,]                            = c('S = 1.3'          ,F, 1.3,F,NA)
 
 if(!DEBUG ){
-  df_selection_method[1,]                            = c('S = 1.1'          ,F, 1.1,F,NA)
-  df_selection_method[nrow(df_selection_method) +1,] = c('S = 1.2'          ,F, 1.2,F,NA)
-  df_selection_method[nrow(df_selection_method) +1,] = c('S = 1.3'          ,F, 1.3,F,NA)
-  df_selection_method[nrow(df_selection_method) +1,] = c('S = 1.4'          ,F, 1.4,F,NA)
-  df_selection_method[nrow(df_selection_method) +1,] = c('S=1.4, Oracle'   ,T, 1.4,F,NA)  
+  # df_selection_method[1,]                            = c('S = 1.1'          ,F, 1.1,F,NA)
+  # df_selection_method[nrow(df_selection_method) +1,] = c('S = 1.2'          ,F, 1.2,F,NA)
+  # df_selection_method[nrow(df_selection_method) +1,] = c('S = 1.3'          ,F, 1.3,F,NA)
+  # df_selection_method[nrow(df_selection_method) +1,] = c('S = 1.4'          ,F, 1.4,F,NA)
+  # df_selection_method[nrow(df_selection_method) +1,] = c('S=1.4, Oracle'   ,T, 1.4,F,NA)  
+  df_selection_method[1,]                            = c('Smean'          ,F, -1,F,NA)
+  df_selection_method[nrow(df_selection_method) +1,] = c('Smean, Oracle'   ,T, -1,F,NA)
 }
 
 NR_METHODS = 3*(nrow(df_selection_method)) +7 # 7 for ANCOMX3 and WILCOXON + percent + Paulson + qPCR,  for dfdr with "mean log +1"

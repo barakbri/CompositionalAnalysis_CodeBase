@@ -21,7 +21,7 @@
 
 DISABLE_ANCOM = F
 
-HMP_RESULTS_DIR = "C:\\MCB2\\HMP2\\Results\\"
+HMP_RESULTS_DIR = "../../Results/HMP/"
 # This will eventually be saved to file:
 results_to_save = list()
 
@@ -72,10 +72,12 @@ if(VERBOSE_MSGS){
   cat(paste0('Loading data, body sites ',Y0,' and ',Y1,'\n\r'))
 }
 
-source('C:/MCB2/MCB2/MCB_Simulation/Aggregate_by_Level.R')
-source('C:/MCB2/MCB2/MCB_Simulation/REFSIM_Selection_Methods.R')
-source(paste0('C:/MCB2/','MCB2/MCB_Simulation/SelectReferencesByRatios_and_Abundance.R')) #for plotting
-source('C:/MCB2/MCB2/MCB_Simulation/SelectReferences_MedianSD_Threshold.R')
+#source('C:/MCB2/MCB2/MCB_Simulation/Aggregate_by_Level.R')
+#source('C:/MCB2/MCB2/MCB_Simulation/REFSIM_Selection_Methods.R')
+#source(paste0('C:/MCB2/','MCB2/MCB_Simulation/SelectReferencesByRatios_and_Abundance.R')) #for plotting
+#source('C:/MCB2/MCB2/MCB_Simulation/SelectReferences_MedianSD_Threshold.R')
+
+source('ReferenceScore_Plot.R')
 
 library(subzero)
 library(ancom.R)
@@ -84,8 +86,8 @@ set.seed(1)
 
 AGGREGATE_TO_GENUS = T
 if(LOAD_DATA){
-  counts_matrix = read.csv(file = 'C:/MCB2/HMP2/OTU_Counts.csv')
-  sample_data = read.csv(file = 'C:/MCB2/HMP2/HMP_sample_data.csv')
+  counts_matrix = read.csv(file = '../../HMP2/OTU_Counts.csv')
+  sample_data = read.csv(file = '../../HMP2/HMP_sample_data.csv')
   genus_type = as.character(counts_matrix[,ncol(counts_matrix)])
   counts_as_matrix_original = t(counts_matrix[,-ncol(counts_matrix)])
   counts_as_matrix_original = counts_as_matrix_original[-1,]
@@ -240,76 +242,21 @@ if(!is.null(selected_references) & length(selected_references) <= dim(X_2)[2] - 
   
   set.seed(1)
   flag = T
-  lambda_multiplier = 1
-  while(flag){
-    if(VERBOSE_MSGS)
-      print(paste0('Lambda multiplier: ',lambda_multiplier))
-    # res = subzero.test(X_2,Y,as.numeric(selected_references),
-    #                    verbose = F,
-    #                    do.auto.selection.rarefaction.quantile = F,
-    #                    test = TEST_USED,
-    #                    nr_rarefactions_multiple_X = NR_MULTIPLE_RAREFACTION,
-    #                    NR_PERM_PERMPROPTEST_SRT = NR_PERMUTATIONS,NORMAL_APPROX_SRT = NORMAL_APPROX,
-    #                    rarefaction_quantile = 0,
-    #                    lambda_multiplier = lambda_multiplier)
-    # 
-    # results_to_save$res = res  
-    
-    if(VERBOSE_MSGS)
-      print(paste0('Computing DS-FDR'))
-    res_dsfdr = subzero.dfdr.test(X = X_2,Y,as.numeric(selected_references),
-                                  nr_rarefactions_multiple_X = NR_MULTIPLE_RAREFACTION,
-                                  nr_perm = ceiling(1/(Q/(dim(X_2)[2]))),verbose = F,
-                                  lambda_multiplier = lambda_multiplier,q = Q)
-    results_to_save$res_dsfdr = res_dsfdr
-    if(lambda_multiplier==1){
-      results_to_save$res_dsfdr_lambda_1_0 =  res_dsfdr
-      results_to_save$res_dsfdr_lambda_1_0_rejected =  res_dsfdr$rejected #(which(p.adjust(results_to_save$res_dsfdr_lambda_1_0$p.values.test,method = 'BH')<=Q))
-    }
-    rejected = res_dsfdr$rejected#which(p.adjust(res_dsfdr$p.values.test,method = 'BH')<=Q)
-    rejected_ref = which(p.adjust(res_dsfdr$p.values.ref,method = 'BH')<=Q)
-    rejected_by_pval = res_dsfdr$rejected#which(p.adjust(res_dsfdr$p.values.ref,method = 'BH')<=Q)
-    
-    if(SENSITIVITY_ANALYSIS_BY_BH)
-      rejected_ref = rejected_by_pval
-    
-    if(length(rejected_ref)>0 & lambda_multiplier>LAMBDA_MULTIPLIER_MINIMAL){
-      lambda_multiplier = lambda_multiplier * LAMBDA_ITERATION_MULTIPLIER
-      if(VERBOSE_MSGS)
-        print(paste0('Number of rejections in reference; ',length(rejected_ref) ,', Decreasing lambda'))
-      }else{
-        results_to_save$lambda_multiplier = lambda_multiplier
-        flag = F
-        if(VERBOSE_MSGS)
-          print(paste0('Number of rejections in reference; ',length(rejected_ref) ,', Done!'))
-      }
-        
-    
-    # current_ref_pvalues = res_dsfdr$p.values
-    # current_ref_pvalues[-selected_references] = NA
-    # ref_rejected = which(p.adjust(current_ref_pvalues,method = 'BH')<=0.05)
-    # if(length(ref_rejected) > 0 & lambda_multiplier>LAMBDA_MULTIPLIER_MINIMAL){
-    #   lambda_multiplier = lambda_multiplier * LAMBDA_ITERATION_MULTIPLIER
-    #   if(VERBOSE_MSGS)
-    #     print(paste0('Number of rejections in reference; ',length(ref_rejected) ,', Decreasing lambda'))
-    # }else{
-    #   results_to_save$lambda_multiplier = lambda_multiplier
-    #   flag = F
-    #   if(VERBOSE_MSGS)
-    #     print(paste0('Number of rejections in reference; ',length(ref_rejected) ,', Done!'))
-    # }
-  }#end of while over flag
- 
+  if(VERBOSE_MSGS)
+    print(paste0('Computing DS-FDR'))
+  
+  res_dsfdr = subzero.dfdr.test(X = X_2,Y,as.numeric(selected_references),
+                                nr_perm = ceiling(1/(Q/(dim(X_2)[2]))),verbose = F,q = Q)
+  results_to_save$res_dsfdr = res_dsfdr
+  
+  rejected = res_dsfdr$rejected
+  rejected_by_pval = which(p.adjust(res_dsfdr$p.values.test,method = 'BH')<=Q)
+  
+  results_to_save$rejected = rejected
+  results_to_save$rejected_by_pval = rejected_by_pval
   
 }
 
-#res$pvalue
-#res$min_value_array
-#res$pvalue
-#count_rejections_for_subzero(res)
-#hist(res$pvalue_ref)
-#sum((p.adjust(res$pvalue_ref,method = 'BH')<=0.05),na.rm = T)
-#hist(res$pvalue_ref)
 
 ####
 #Section IV: Compare to ANCOM
@@ -344,7 +291,7 @@ intersect_with_ANCOM = function(res_dsfdr,ANCOM_Detected_Original,alpha = Q){
   ret = list()
   pvalues_for_test = res_dsfdr$p.values
   pvalues_for_test[selected_references] = NA
-  rejected = res_dsfdr$rejected #which(p.adjust(pvalues_for_test,method = 'BH')<=alpha)
+  rejected = which(p.adjust(res_dsfdr$p.values.test,method = 'BH')<=alpha)
   ret$shared_with_ANCOM = intersect(rejected,ANCOM_Detected_Original)
   ret$unique = setdiff(rejected,ret$shared_with_ANCOM)
   ret$unique_ANCOM = setdiff(ANCOM_Detected_Original,ret$shared_with_ANCOM)
@@ -478,13 +425,11 @@ Y_subset = Y[selected_for_subset]
 
 selected_references_obj_subset = select.references.Median.SD.Threshold(X = X_2_subset,median_SD_threshold = MED_SD_THRES,minimal_TA = MIN_TA,maximal_TA = MAX_TA,select_from = 1:(ncol(X_2_subset)-1))
 
-res_dsfdr_subset = subzero.dfdr.test(X = X_2_subset,Y_subset,as.numeric(selected_references_obj_subset$selected_references),
-                              nr_rarefactions_multiple_X = NR_MULTIPLE_RAREFACTION,q = Q,
-                              nr_perm = ceiling(1/(Q/(dim(X_2)[2]))),verbose = F,
-                              lambda_multiplier = lambda_multiplier)
+res_dsfdr_subset = subzero.dfdr.test(X = X_2_subset,Y_subset,as.numeric(selected_references_obj_subset$selected_references),q = Q,
+                              nr_perm = ceiling(1/(Q/(dim(X_2)[2]))),verbose = F)
 pvalues_subset = res_dsfdr_subset$p.values
 pvalues_subset[selected_references_obj_subset$selected_references] = NA
-nr_rejections_subset = length(res_dsfdr_subset$rejected)#length(which(p.adjust(pvalues_subset,method = 'BH')<=Q))
+nr_rejections_subset = length(which(p.adjust(pvalues_subset,method = 'BH')<=Q))
 results_to_save$res_dsfdr_subset = res_dsfdr_subset
 results_to_save$nr_rejections_subset = nr_rejections_subset
 
@@ -496,19 +441,19 @@ if(VERBOSE_MSGS){
   cat(paste0('Running Wilcoxon (naive)...\n\r'))
 }
 
-source( 'C:/MCB2/MCB2/MCB_Simulation/Wilcoxon_TaxaWise.R' )
+source( 'Wilcoxon_TaxaWise.R' )
 Wilcoxon_res           = wilcoxon_taxa_wise(X_2,Y)
 Wilcoxon_res_normalize = wilcoxon_taxa_wise(X_2,Y,normalize = T)
 X_CSS = t(metagenomeSeq::cumNormMat(t(X_2)))
-Wilcoxon_res_normalize_0_75 = wilcoxon_taxa_wise(X_CSS,Y,normalize = F,normalize.P = 0.75)
+Wilcoxon_res_normalize_CSS = wilcoxon_taxa_wise(X_CSS,Y,normalize = F,normalize.P = 1)
 
 results_to_save$Wilcoxon_res = Wilcoxon_res
 results_to_save$Wilcoxon_res_normalize = Wilcoxon_res_normalize
-results_to_save$Wilcoxon_res_normalize_0_75 = Wilcoxon_res_normalize_0_75
+results_to_save$Wilcoxon_res_normalize_CSS = Wilcoxon_res_normalize_CSS
 
 results_to_save$Nr_Wilcoxon_Rejections = length( which(p.adjust(Wilcoxon_res$p.values,method = 'BH') <= Q) )
 results_to_save$Nr_Wilcoxon_Normalize_Rejections = length( which(p.adjust(Wilcoxon_res_normalize$p.values,method = 'BH') <= Q) )
-results_to_save$Nr_Wilcoxon_Normalize_0_75_Rejections = length( which(p.adjust(Wilcoxon_res_normalize_0_75$p.values,method = 'BH') <= Q) )
+results_to_save$Nr_Wilcoxon_Normalize_Rejections_CSS = length( which(p.adjust(Wilcoxon_res_normalize_CSS$p.values,method = 'BH') <= Q) )
 
 ####
 #Section VI: Save results
@@ -521,12 +466,12 @@ save(results_to_save,file = results_save_file)
 
 if(VERBOSE_MSGS){
   cat(paste0('Done body sites ',Y0,' and ',Y1,'\n\r'))
-  pvals = res_dsfdr$p.values
-  pvals_test = pvals; pvals_test[selected_references] = NA
-  pvals_ref = pvals; pvals_ref[-selected_references] = NA
-  rej_lambda1 = length(results_to_save$res_dsfdr_lambda_1_0_rejected)
-  nr_rej =length(which(p.adjust(pvals_test,method = 'BH')<=Q))
-  nr_rej_ref =length(which(p.adjust(pvals_ref,method = 'BH')<=Q))
-  cat(paste0('Rej: ',rej_lambda1 ,', Rej_sens:',nr_rej,' , Rej-ref',nr_rej_ref,'\n\r'))
+  # pvals = res_dsfdr$p.values
+  # pvals_test = pvals; pvals_test[selected_references] = NA
+  # pvals_ref = pvals; pvals_ref[-selected_references] = NA
+  # rej_lambda1 = length(results_to_save$res_dsfdr_lambda_1_0_rejected)
+  # nr_rej =length(which(p.adjust(pvals_test,method = 'BH')<=Q))
+  # nr_rej_ref =length(which(p.adjust(pvals_ref,method = 'BH')<=Q))
+  # cat(paste0('Rej: ',rej_lambda1 ,', Rej_sens:',nr_rej,' , Rej-ref',nr_rej_ref,'\n\r'))
 }
 

@@ -1,46 +1,27 @@
 
-
-MAINDIR = 'C:/MCB2/'
-
 #Modes
 CORRECTION_TYPE_SUBZERO = 'BH'
 CORRECTION_TYPE_WILCOXON = 'BH'
 
-
 library(subzero)
-
-source(paste0(MAINDIR,'MCB2/MCB_Simulation/Wilcoxon_TaxaWise.R'))
-source(paste0(MAINDIR,'MCB2/MCB_Simulation/exactHyperGeometricTest.R'))
-source(paste0(MAINDIR,'MCB2/MCB_Simulation/LAMBDASIM_ANCOM_Compatible_Scenarios.R'))
-source(paste0(MAINDIR,'MCB2/MCB_Simulation/REFSIM_ANCOM_Compatible_Scenarios.R'))
-source(paste0(MAINDIR,'MCB2/MCB_Simulation/REFSIM_KIDS_SCENARIO.R'))
-source(paste0(MAINDIR,'MCB2/MCB_Simulation/REFSIM_qPCR_SCENARIO.R'))
-source(paste0(MAINDIR,'MCB2/MCB_Simulation/REFSIM_NoCompositionality_Scenario2.R'))
-source(paste0(MAINDIR,'MCB2/MCB_Simulation/REFSIM_BODY_SITES_SCENARIO.R'))
-source(paste0(MAINDIR,'MCB2/MCB_Simulation/REFSIM_ANCOM_SCENARIOS_2.R'))
-source(paste0(MAINDIR,'MCB2/MCB_Simulation/REFSIM_GenerateSettings_Index.R'))
-source(paste0(MAINDIR,'MCB2/MCB_Simulation/REFSIM_Selection_Methods.R'))
-source(paste0(MAINDIR,'MCB2/MCB_Simulation/SelectReferencesByRatios.R'))
-source(paste0(MAINDIR,'MCB2/MCB_Simulation/SelectReferencesByRatios_and_Abundance.R'))
-source(paste0(MAINDIR,'MCB2/MCB_Simulation/SelectReferences_MedianSD_Threshold.R'))
-
-RESULTS_DIR = paste0(MAINDIR,"/Results/")
+source('ReferenceScore_Plot.R')
+source(paste0('REFSIM_GenerateSettings_Index.R'))
+RESULTS_DIR = paste0("../../Results/")
 
 ref_selection_results = data.frame(label = NA,nr_taxa = NA,nr_selected = NA,actual_abundance = NA)
 selected_obj_list = list()
 set.seed(1)
 SCENARIO_ID = 30
-Target_MinAbundance_values = c(2,5,10,20,50)
 
 DO_PLOTS = T
 DO_PLOTS_TO_FILE = T
 
 
 
-for(SCENARIO_ID in 1:79){
+for(SCENARIO_ID in 1:25){
   print(paste0('Doing scenario ',SCENARIO_ID))
   if(DO_PLOTS_TO_FILE)
-    pdf(file =  paste0('C:/MCB2/Results/RefSelection_Scores_Analysis_SCENARIO_',SCENARIO_ID,'.pdf'),width = 8,height = 5)
+    pdf(file =  paste0(RESULTS_DIR,'/RefSelection_Scores_Analysis_SCENARIO_',SCENARIO_ID,'.pdf'),width = 8,height = 5)
   current_setting_generator = REFSIM_SETTINGS_LIST[[SCENARIO_ID]]  
   data = REFSIM_generate_setting_wrapper(current_setting_generator)  
   
@@ -73,7 +54,7 @@ for(SCENARIO_ID in 1:79){
 }
 
 
-write.csv(ref_selection_results,file = 'E:/MCB2/Results/Ref_Selction_Compare_results.csv')
+write.csv(ref_selection_results,file = paste0(RESULTS_DIR,'/Ref_Selction_Compare_results.csv'))
 
 
 
@@ -101,4 +82,4 @@ for(i in 1:length(MIN_REFSCORE_H1)){
 
 dt_refscore_m1_sim = data.frame(SCENARIO_TO_COMPUTE_vec,MIN_REFSCORE_H1)
 dt_refscore_m1_sim
-write.csv(dt_refscore_m1_sim,'C:/MCB2/Results/REFSCORE_H1.csv',row.names = F)
+write.csv(dt_refscore_m1_sim,paste0(RESULTS_DIR,'/REFSCORE_H1.csv'),row.names = F)
