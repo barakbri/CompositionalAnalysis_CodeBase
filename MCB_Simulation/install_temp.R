@@ -1,0 +1,11 @@
+#install.packages('shiny','exactRankTests','ggplot2','openxlsx')
+#install.packages('exactRankTests')
+
+if (!requireNamespace("BiocManager", quietly = TRUE))
+  install.packages("BiocManager")
+BiocManager::install("phyloseq", version = "3.8")
+if (!requireNamespace("BiocManager", quietly = TRUE))
+  install.packages("BiocManager")
+BiocManager::install("metagenomeSeq", version = "3.8")
+install.packages('ggplot2')
+install.packages('openxlsx')

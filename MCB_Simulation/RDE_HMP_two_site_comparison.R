@@ -42,12 +42,11 @@ MIN_TA = 10
 MAX_TA = 200
 ADJUSTMENT = 0
 MIN_PREV = 0.00
-MED_SD_THRES = 1.3
-SENSITIVITY_ANALYSIS_BY_BH = T
+MED_SD_THRES = 1.6
 
 NORMAL_APPROX = T
 NR_PERMUTATIONS = 30000
-TEST_USED = 'Wilcoxon.MultipleX'#'Wilcoxon.MultipleX'  TwoPartWilcoxon.MultipleX
+TEST_USED = 'Wilcoxon.MultipleX' #'Wilcoxon.MultipleX'  TwoPartWilcoxon.MultipleX
 NR_MULTIPLE_RAREFACTION = 1
 VERBOSE_MSGS = T
 LAMBDA_ITERATION_MULTIPLIER = 0.1
@@ -56,7 +55,7 @@ LAMBDA_MULTIPLIER_MINIMAL = 0.1#0.01
 results_to_save$parameters_list = list(Q = Q, MINIMAL_RATIO_OTHER = MINIMAL_RATIO_OTHER,
                                        AGG_LEVEL = AGG_LEVEL, GLOBAL_RAREFACTION_QUANTILE = GLOBAL_RAREFACTION_QUANTILE,
                                        MIN_TA = MIN_TA,MAX_TA = MAX_TA, MIN_PREV = MIN_PREV,
-                                       ADJUSTMENT = ADJUSTMENT,MED_SD_THRES = MED_SD_THRES, SENSITIVITY_ANALYSIS_BY_BH = SENSITIVITY_ANALYSIS_BY_BH)
+                                       ADJUSTMENT = ADJUSTMENT,MED_SD_THRES = MED_SD_THRES)
 results_to_save$body_sites = list(Y0 = Y0,Y1 = Y1)
 results_to_save$computation_parameters = list(NORMAL_APPROX = NORMAL_APPROX,
                                               NR_PERMUTATIONS = NR_PERMUTATIONS,
@@ -214,7 +213,7 @@ results_to_save$empty_taxa = which(taxa_sums == 0)
 
 
 selected_references_obj = select.references.Median.SD.Threshold(X = X_2,median_SD_threshold = MED_SD_THRES,minimal_TA = MIN_TA,
-                                                                maximal_TA = MAX_TA,select_from = 1:(ncol(X_2)),verbose = F)
+                                                                maximal_TA = MAX_TA,select_from = 1:(ncol(X_2)),verbose = F,Psuedo_Count_used = 1,factor_by_Median_Score = F)
 
 ref_analysis_save_file = paste0(HMP_RESULTS_DIR,"Ref_selection_analysis_",(Y0),"_",Y1,'.pdf')
 pdf(file = ref_analysis_save_file,width = 8,height = 5)

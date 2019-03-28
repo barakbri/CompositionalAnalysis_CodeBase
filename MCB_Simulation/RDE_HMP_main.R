@@ -31,7 +31,7 @@ region = c(1,rep(2,9),rep(3,5),rep(4,3))
 # choose(9,2) + choose(5,2) + choose(3,2)
 
 MODE_RUN = T
-MODE_ANALYZE = F
+MODE_ANALYZE = T
 START_FROM = 1
 START_FROM_SITE_2 = 2
 DATA_LOADED = F
@@ -115,10 +115,6 @@ if(MODE_ANALYZE){
         nr_vanilla_unique       = length(results_to_save$intersect_with_ANCOM$unique)
         nr_vanilla_unique_ANCOM = length(results_to_save$intersect_with_ANCOM$unique_ANCOM)  
         
-        mult1_rejected = which(p.adjust(results_to_save$res_dsfdr_lambda_1_0$p.values.test,method = 'BH')<=Q)
-        if(length(mult1_rejected)>DS.FDR.LIMIT | DS.FORCE){
-          mult1_rejected = results_to_save$res_dsfdr_lambda_1_0$rejected
-        }
         
         median_lambda = median(results_to_save$res_dsfdr$min_value_array)
         if(is.null(median_lambda))

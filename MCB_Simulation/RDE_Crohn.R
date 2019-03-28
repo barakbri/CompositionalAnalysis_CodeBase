@@ -189,9 +189,9 @@ intersect_with_ANCOM = function(ANCOM_res,subzero_rejections){
 
 #Checking subzero/thac0
 library(subzero)
-median_SD_thres_Vec = seq(1.0, 1.4, 0.1) #seq(1.0,1.4,0.05)
+median_SD_thres_Vec = seq(1.1, 1.9, 0.1) #seq(1.0,1.4,0.05)
 lambda_multiplier_Vec = c(1.0)
-PS_value = 10
+PS_value = 1
 parameter_matrix = expand.grid(lambda_multiplier_Vec = lambda_multiplier_Vec ,
                                median_SD_thres_Vec = median_SD_thres_Vec)
 
@@ -214,7 +214,7 @@ for(i in 1:nrow(parameter_matrix)){
   
   if(NEED_TO_SELECT){
     print(paste0('Selecting references , thres = ',current_thres))
-    current_selected_ref_obj = select.references.Median.SD.Threshold(X,median_SD_threshold = current_thres,maximal_TA = 200,Psuedo_Count_used = PS_value,  verbose = F)
+    current_selected_ref_obj = select.references.Median.SD.Threshold(X,median_SD_threshold = current_thres,maximal_TA = 200,Psuedo_Count_used = PS_value,  verbose = F,factor_by_Median_Score = F)
     last_computed_thres = current_thres
   }
   ref_list[[i]] =   current_selected_ref_obj
@@ -294,7 +294,7 @@ disc_vec_ANCOM = which(colnames(ANCOM_otu_dat)%in% ANCOM_default_res$detected),
 disc_Wilcoxon_corrected = disc_Wilcoxon_corrected ,
 disc_Wilcoxon_Paulson = disc_Wilcoxon_Paulson,
 disc_Wilcoxon_percent = disc_Wilcoxon_percent,
-RAR = which(p.adjust(res_Wilcoxon_list[[4]]$p.values.test,method = 'BH')<=Q_LEVEL)
+RAR = which(p.adjust(res_Wilcoxon_list[[3]]$p.values.test,method = 'BH')<=Q_LEVEL)
 )
 
 method_names = c('ANCOM','WIL-FLOW','WIL-CSS','WIL-TSS','RAR')
@@ -310,4 +310,38 @@ for(i in 1:length(method_names)){
 write.csv(shared_disc_mat,file = '../../Results/gut_qPCR_shared_disc_mat.csv')
 
 
+#Plot, compare large taxa
 
+ind_to_prevalent = which(apply(X,2,mean)>=10)
+
+
+disc_list_plot = disc_list
+names(disc_list_plot) = c('ANCOM','W-FLOW','W-CSS','W-TSS','W-COMP')
+disc_list_plot_prevalent = disc_list_plot
+disc_list_plot_rare = disc_list_plot
+
+
+
+for(i in 1:length(disc_list_plot_prevalent)){
+  disc_list_plot_prevalent[[i]] = intersect(disc_list_plot_prevalent[[i]],ind_to_prevalent) 
+  disc_list_plot_rare[[i]] = setdiff(disc_list_plot_rare[[i]],ind_to_prevalent)
+}
+
+library(gplots)
+venn(disc_list_plot)
+
+
+pdf(file = '../../Results/Crohn_shared.pdf',height = 6,width = 14)
+par(mfrow=c(1,2))
+venn(disc_list_plot_prevalent)
+venn(disc_list_plot_rare)
+par(mfrow=c(1,1))
+dev.off()
+
+pdf(file = '../../Results/Crohn_shared_prevalent.pdf',height = 6,width = 7)
+venn(disc_list_plot_prevalent)
+dev.off()
+
+pdf(file = '../../Results/Crohn_shared_rare.pdf',height = 6,width = 7)
+venn(disc_list_plot_rare)
+dev.off()

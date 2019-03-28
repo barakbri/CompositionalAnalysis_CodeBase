@@ -3,6 +3,12 @@ load(paste0('qPCR_data.RData')) #=> qPCR_data
 
 REFSIM_QPCR_TYPE_SCENARIO_DEF = 'REFSIM_QPCR_TYPE_SCENARIO_DEF'
 
+select_diff_abundant_10 = sample(1:(ncol(qPCR_data$counts_matrix)),size = 10,replace = F)
+select_diff_abundant_scalar_10 = sample(c(0.5,1,1.5),size = 10,replace = T)
+
+select_diff_abundant_100 = sample(1:(ncol(qPCR_data$counts_matrix)),size = 100,replace = F)
+select_diff_abundant_scalar_100 = sample(c(0.5,1,1.5),size = 100,replace = T)
+
 #generate frequencies
 REFSIM_generate_qPCR_TYPE_Scenario = function(label = "MISSING_LABEL",
                                m_diff_abundant = 10,
@@ -12,12 +18,24 @@ REFSIM_generate_qPCR_TYPE_Scenario = function(label = "MISSING_LABEL",
                                poisson_mean_reads = 100000,
                                global_NULL = F,
                                Const_Size_Variant = F,
-                               Const_Size_Effect_Multiplier = 2
+                               Const_Size_Effect_Multiplier = 2,
+                               Percent_to_add = 0.5
                                ){
   m = ncol(qPCR_data$counts_matrix)
   select_diff_abundant = 0
+  select_diff_abundant_scalar = 1
   if(!global_NULL){
-    select_diff_abundant = sample(1:(m),size = m_diff_abundant,replace = F)
+    if(m_diff_abundant == 10){
+      select_diff_abundant = select_diff_abundant_10
+      select_diff_abundant_scalar = select_diff_abundant_scalar_10
+    }else if (m_diff_abundant == 100){
+      select_diff_abundant = select_diff_abundant_100
+      select_diff_abundant_scalar = select_diff_abundant_scalar_100
+    }else{
+      select_diff_abundant = select_diff_abundant_100
+      select_diff_abundant_scalar = select_diff_abundant_scalar_100
+    }
+    
   }
   
   
@@ -32,6 +50,7 @@ REFSIM_generate_qPCR_TYPE_Scenario = function(label = "MISSING_LABEL",
   ret$m_diff_abundant = m_diff_abundant
   ret$effect_relative_to_total_sample = effect_relative_to_total_sample
   ret$select_diff_abundant = select_diff_abundant
+  ret$select_diff_abundant_scalar = select_diff_abundant_scalar
   ret$n0 = n0
   ret$n1 = n1
   ret$poisson_mean_reads = poisson_mean_reads
@@ -39,6 +58,7 @@ REFSIM_generate_qPCR_TYPE_Scenario = function(label = "MISSING_LABEL",
   ret$Const_Size_Variant = Const_Size_Variant
   ret$index_in_selected_for_reducing = index_in_selected_for_reducing
   ret$Const_Size_Effect_Multiplier = Const_Size_Effect_Multiplier
+  ret$Percent_to_add = Percent_to_add
   class(ret) = REFSIM_QPCR_TYPE_SCENARIO_DEF
   return(ret)
 }
@@ -66,6 +86,8 @@ REFSIM_generate_data_for_qPCR_Type_Scenario = function(setting_def){
   Const_Size_Variant = setting_def$Const_Size_Variant
   Const_Size_Effect_Multiplier = setting_def$Const_Size_Effect_Multiplier
   index_in_selected_for_reducing = setting_def$index_in_selected_for_reducing
+  select_diff_abundant_scalar = setting_def$select_diff_abundant_scalar
+  Percent_to_add = setting_def$Percent_to_add
   
   X_unsampled = matrix(NA,nrow = setting_def$n0 + setting_def$n1,ncol = setting_def$m)
   X = matrix(NA,nrow = setting_def$n0 + setting_def$n1,ncol = setting_def$m)
@@ -85,7 +107,7 @@ REFSIM_generate_data_for_qPCR_Type_Scenario = function(setting_def){
     if(Y[i] == 1){
       if(!Const_Size_Variant){
         for(s in 1:length(select_diff_abundant)){
-          lambda_for_effect = effect_relative_to_total_sample * qPCR_counts_in_sample
+          lambda_for_effect = effect_relative_to_total_sample * qPCR_counts_in_sample* select_diff_abundant_scalar[s]*rbinom(1,1,Percent_to_add)/length(select_diff_abundant_scalar)
           X_unsampled[i,select_diff_abundant[s]] = X_unsampled[i,select_diff_abundant[s]] + round(rnorm(1,lambda_for_effect,sqrt(lambda_for_effect)))
         }  
       }else{

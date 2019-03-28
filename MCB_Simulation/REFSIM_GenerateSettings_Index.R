@@ -20,8 +20,7 @@ REFSIM_generate_setting_wrapper = function(setting_parameters){
 }
 
 set.seed(1)
-EFFECT_SCALAR = 0.1
-n_qpcr = 20
+n_qpcr = 60
 qPCR_MEDIAN_READS = 22449
 
 REFSIM_SETTINGS_LIST = list()
@@ -29,17 +28,17 @@ REFSIM_SETTINGS_LIST = list()
 
 # 1 - 11 # data resample
 
-REFSIM_SETTINGS_LIST[[length(REFSIM_SETTINGS_LIST) + 1]] = REFSIM_generate_qPCR_TYPE_Scenario(label = 'qPCR, GlobalNull, 20:20', m_diff_abundant = 0,global_NULL = T, effect_relative_to_total_sample = 0.00, n0 = n_qpcr,n1 = n_qpcr, poisson_mean_reads = qPCR_MEDIAN_READS)
-REFSIM_SETTINGS_LIST[[length(REFSIM_SETTINGS_LIST) + 1]] = REFSIM_generate_qPCR_TYPE_Scenario(label = 'qPCR, m1 = 10, 20:20, effect = 0.5', m_diff_abundant = 10,global_NULL = F, effect_relative_to_total_sample = 0.5, n0 = n_qpcr,n1 = n_qpcr, poisson_mean_reads = qPCR_MEDIAN_READS) 
-REFSIM_SETTINGS_LIST[[length(REFSIM_SETTINGS_LIST) + 1]] = REFSIM_generate_qPCR_TYPE_Scenario(label = 'qPCR, m1 = 100, 20:20, effect = 0.5', m_diff_abundant = 100,global_NULL = F, effect_relative_to_total_sample = 0.5, n0 = n_qpcr,n1 = n_qpcr, poisson_mean_reads = qPCR_MEDIAN_READS) 
-REFSIM_SETTINGS_LIST[[length(REFSIM_SETTINGS_LIST) + 1]] = REFSIM_generate_qPCR_TYPE_Scenario(label = 'qPCR, m1 = 10, 20:20, effect = 1.0', m_diff_abundant = 10,global_NULL = F, effect_relative_to_total_sample = 1.0, n0 = n_qpcr,n1 = n_qpcr, poisson_mean_reads = qPCR_MEDIAN_READS) 
-REFSIM_SETTINGS_LIST[[length(REFSIM_SETTINGS_LIST) + 1]] = REFSIM_generate_qPCR_TYPE_Scenario(label = 'qPCR, m1 = 100, 20:20, effect = 1.0', m_diff_abundant = 100,global_NULL = F, effect_relative_to_total_sample = 1.0, n0 = n_qpcr,n1 = n_qpcr, poisson_mean_reads = qPCR_MEDIAN_READS) 
-REFSIM_SETTINGS_LIST[[length(REFSIM_SETTINGS_LIST) + 1]] = REFSIM_generate_qPCR_TYPE_Scenario(label = 'qPCR, m1 = 10, 20:20, effect = 1.5', m_diff_abundant = 10,global_NULL = F, effect_relative_to_total_sample = 1.5, n0 = n_qpcr,n1 = n_qpcr, poisson_mean_reads = qPCR_MEDIAN_READS) 
-REFSIM_SETTINGS_LIST[[length(REFSIM_SETTINGS_LIST) + 1]] = REFSIM_generate_qPCR_TYPE_Scenario(label = 'qPCR, m1 = 100, 20:20, effect = 1.5', m_diff_abundant = 100,global_NULL = F, effect_relative_to_total_sample = 1.5, n0 = n_qpcr,n1 = n_qpcr, poisson_mean_reads = qPCR_MEDIAN_READS)
-REFSIM_SETTINGS_LIST[[length(REFSIM_SETTINGS_LIST) + 1]] = REFSIM_generate_qPCR_TYPE_Scenario(label = 'qPCR, m1 = 10, 20:20, effect = 2.0', m_diff_abundant = 10,global_NULL = F, effect_relative_to_total_sample = 2.0, n0 = n_qpcr,n1 = n_qpcr, poisson_mean_reads = qPCR_MEDIAN_READS) 
-REFSIM_SETTINGS_LIST[[length(REFSIM_SETTINGS_LIST) + 1]] = REFSIM_generate_qPCR_TYPE_Scenario(label = 'qPCR, m1 = 100, 20:20, effect = 2.0', m_diff_abundant = 100,global_NULL = F, effect_relative_to_total_sample = 2.0, n0 = n_qpcr,n1 = n_qpcr, poisson_mean_reads = qPCR_MEDIAN_READS) 
-REFSIM_SETTINGS_LIST[[length(REFSIM_SETTINGS_LIST) + 1]] = REFSIM_generate_qPCR_TYPE_Scenario(label = 'qPCR, m1 = 10, 20:20, effect = 2.5', m_diff_abundant = 10,global_NULL = F, effect_relative_to_total_sample = 2.5, n0 = n_qpcr,n1 = n_qpcr, poisson_mean_reads = qPCR_MEDIAN_READS) 
-REFSIM_SETTINGS_LIST[[length(REFSIM_SETTINGS_LIST) + 1]] = REFSIM_generate_qPCR_TYPE_Scenario(label = 'qPCR, m1 = 100, 20:20, effect = 2.5', m_diff_abundant = 100,global_NULL = F, effect_relative_to_total_sample = 2.5, n0 = n_qpcr,n1 = n_qpcr, poisson_mean_reads = qPCR_MEDIAN_READS) 
+REFSIM_SETTINGS_LIST[[length(REFSIM_SETTINGS_LIST) + 1]] = REFSIM_generate_qPCR_TYPE_Scenario(label = 'qPCR, GlobalNull, 60:60', m_diff_abundant = 0,global_NULL = T, effect_relative_to_total_sample = 0.00, n0 = n_qpcr,n1 = n_qpcr, poisson_mean_reads = qPCR_MEDIAN_READS)
+REFSIM_SETTINGS_LIST[[length(REFSIM_SETTINGS_LIST) + 1]] = REFSIM_generate_qPCR_TYPE_Scenario(label = 'qPCR, m1 = 10, 60:60, effect = 0.5', m_diff_abundant = 10,global_NULL = F, effect_relative_to_total_sample = 0.5, n0 = n_qpcr,n1 = n_qpcr, poisson_mean_reads = qPCR_MEDIAN_READS) 
+REFSIM_SETTINGS_LIST[[length(REFSIM_SETTINGS_LIST) + 1]] = REFSIM_generate_qPCR_TYPE_Scenario(label = 'qPCR, m1 = 100, 60:60, effect = 0.5', m_diff_abundant = 100,global_NULL = F, effect_relative_to_total_sample = 0.5, n0 = n_qpcr,n1 = n_qpcr, poisson_mean_reads = qPCR_MEDIAN_READS) 
+REFSIM_SETTINGS_LIST[[length(REFSIM_SETTINGS_LIST) + 1]] = REFSIM_generate_qPCR_TYPE_Scenario(label = 'qPCR, m1 = 10, 60:60, effect = 1.0', m_diff_abundant = 10,global_NULL = F, effect_relative_to_total_sample = 1.0, n0 = n_qpcr,n1 = n_qpcr, poisson_mean_reads = qPCR_MEDIAN_READS) 
+REFSIM_SETTINGS_LIST[[length(REFSIM_SETTINGS_LIST) + 1]] = REFSIM_generate_qPCR_TYPE_Scenario(label = 'qPCR, m1 = 100, 60:60, effect = 1.0', m_diff_abundant = 100,global_NULL = F, effect_relative_to_total_sample = 1.0, n0 = n_qpcr,n1 = n_qpcr, poisson_mean_reads = qPCR_MEDIAN_READS) 
+REFSIM_SETTINGS_LIST[[length(REFSIM_SETTINGS_LIST) + 1]] = REFSIM_generate_qPCR_TYPE_Scenario(label = 'qPCR, m1 = 10, 60:60, effect = 1.5', m_diff_abundant = 10,global_NULL = F, effect_relative_to_total_sample = 1.5, n0 = n_qpcr,n1 = n_qpcr, poisson_mean_reads = qPCR_MEDIAN_READS) 
+REFSIM_SETTINGS_LIST[[length(REFSIM_SETTINGS_LIST) + 1]] = REFSIM_generate_qPCR_TYPE_Scenario(label = 'qPCR, m1 = 100, 60:60, effect = 1.5', m_diff_abundant = 100,global_NULL = F, effect_relative_to_total_sample = 1.5, n0 = n_qpcr,n1 = n_qpcr, poisson_mean_reads = qPCR_MEDIAN_READS)
+REFSIM_SETTINGS_LIST[[length(REFSIM_SETTINGS_LIST) + 1]] = REFSIM_generate_qPCR_TYPE_Scenario(label = 'qPCR, m1 = 10, 60:60, effect = 2.0', m_diff_abundant = 10,global_NULL = F, effect_relative_to_total_sample = 2.0, n0 = n_qpcr,n1 = n_qpcr, poisson_mean_reads = qPCR_MEDIAN_READS) 
+REFSIM_SETTINGS_LIST[[length(REFSIM_SETTINGS_LIST) + 1]] = REFSIM_generate_qPCR_TYPE_Scenario(label = 'qPCR, m1 = 100, 60:60, effect = 2.0', m_diff_abundant = 100,global_NULL = F, effect_relative_to_total_sample = 2.0, n0 = n_qpcr,n1 = n_qpcr, poisson_mean_reads = qPCR_MEDIAN_READS) 
+REFSIM_SETTINGS_LIST[[length(REFSIM_SETTINGS_LIST) + 1]] = REFSIM_generate_qPCR_TYPE_Scenario(label = 'qPCR, m1 = 10, 60:60, effect = 2.5', m_diff_abundant = 10,global_NULL = F, effect_relative_to_total_sample = 2.5, n0 = n_qpcr,n1 = n_qpcr, poisson_mean_reads = qPCR_MEDIAN_READS) 
+REFSIM_SETTINGS_LIST[[length(REFSIM_SETTINGS_LIST) + 1]] = REFSIM_generate_qPCR_TYPE_Scenario(label = 'qPCR, m1 = 100, 60:60, effect = 2.5', m_diff_abundant = 100,global_NULL = F, effect_relative_to_total_sample = 2.5, n0 = n_qpcr,n1 = n_qpcr, poisson_mean_reads = qPCR_MEDIAN_READS) 
 
 # 12 - 21 #NO OD
 REFSIM_SETTINGS_LIST[[length(REFSIM_SETTINGS_LIST) + 1]] = REFSIM_generate_NO_OVERDISPERSION_TYPE_Scenario(label = "Signal in low, m_high = 30, p_high = 0.9, n_1=n_2=20,m1 = 120",m_high = 30,p_high = 0.9,n_1 = 20,n_2 = 20)

@@ -60,7 +60,7 @@ write.csv(ref_selection_results,file = paste0(RESULTS_DIR,'/Ref_Selction_Compare
 
 SCENARIO_REPS = 5
 m1_scores_list = list()
-SCENARIO_TO_COMPUTE_vec = c(66:75,76:79,30:40)
+SCENARIO_TO_COMPUTE_vec = c(1:25)
 vec_of_scores = NULL
 for(SCENARIO_ID in SCENARIO_TO_COMPUTE_vec){
   print(paste0('Doing scenario ',SCENARIO_ID))

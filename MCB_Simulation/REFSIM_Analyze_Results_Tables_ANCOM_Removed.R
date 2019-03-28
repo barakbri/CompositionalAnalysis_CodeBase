@@ -55,12 +55,12 @@ dt_FDR$effect =c(0,rep(0.5,2),rep(1.0,2),rep(1.5,2),rep(2.0,2),rep(2.5,2))
 
 library(xtable)
 names(dt_tp)
-cols_to_keep = c(16,17,1,13,14,15,9,5)
+cols_to_keep = c(10,11,1,7,8,9,4,3)
 dt_tp = dt_tp[,cols_to_keep]
 names(dt_tp)
 
 names(dt_FDR)
-cols_to_keep = c(16,17,1,13,14,15,9,5)
+cols_to_keep = c(10,11,1,7,8,9,4,3)
 dt_FDR= dt_FDR[,cols_to_keep]
 names(dt_FDR)
 
@@ -79,8 +79,8 @@ Compute_SE_for_Scenarios(1:11)
 Compute_SE_for_Scenarios(1:11,col = 'tp')
 
 
-dt_FDR_Plot = dt_FDR[,c(1,2,3,4:7)]# NEED # for ANCOM
-names(dt_FDR_Plot)[4:7] = c('W-CSS','W-TSS','W-FLOW','W-COMP') #4:7 With ANCOM removed
+dt_FDR_Plot = dt_FDR[,c(1,2,4:7)]# NEED # for ANCOM
+names(dt_FDR_Plot)[3:6] = c('W-CSS','W-TSS','W-FLOW','W-COMP') #4:7 With ANCOM removed
 dt_FDR_Plot_melt = reshape2::melt(dt_FDR_Plot,id.vars = c('m1','effect'),value.name = 'FDR')
 dt_FDR_Plot_melt_GLOBAL_NULL_m1_10 = dt_FDR_Plot_melt[which(dt_FDR_Plot_melt$m1==0),]
 dt_FDR_Plot_melt_GLOBAL_NULL_m1_100 = dt_FDR_Plot_melt[which(dt_FDR_Plot_melt$m1==0),]
@@ -96,8 +96,8 @@ ggsave(p_1_FDR,filename = '../../Results/sim_p1_poster_FDR.pdf',width = 7,height
 
 
 
-dt_TP_Plot = dt_tp[,c(1,2,3,4:7)] #need 3 for ANCOM
-names(dt_TP_Plot)[4:7] = c('W-CSS','W-TSS','W-FLOW','W-COMP') #missing ANCOM
+dt_TP_Plot = dt_tp[,c(1,2,4:7)] #need 3 for ANCOM
+names(dt_TP_Plot)[3:6] = c('W-CSS','W-TSS','W-FLOW','W-COMP') #missing ANCOM
 dt_TP_Plot_melt = reshape2::melt(dt_TP_Plot,id.vars = c('m1','effect'),value.name = 'TP')
 dt_TP_Plot_melt = dt_TP_Plot_melt[-which(dt_TP_Plot_melt$m1 == 0),]
 names(dt_TP_Plot_melt)[3] = 'Method'

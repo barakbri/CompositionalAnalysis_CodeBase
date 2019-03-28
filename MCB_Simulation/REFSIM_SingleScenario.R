@@ -1,7 +1,10 @@
-NR.WORKERS = 7 #63#72-1#63
-SCENARIO_ID = 25
+NR.WORKERS = 72 #63#72-1#63
+#SCENARIO_ID = 11
 MAINDIR = './'
 Q_LEVEL = 0.1
+
+print(paste0('Start Time:'))
+print(Sys.time())
 
 #Modes
 CORRECTION_TYPE_SUBZERO = 'BH'
@@ -11,8 +14,8 @@ MODE_RUN_SIMULATION = T
 MODE_PROCESS_RESULTS = T
 DEBUG = F
 DEBUG.SINGLE.CORE = F
-DISABLE_ANCOM = T
-DIAG_PLOTS_SELECTION = T
+DISABLE_ANCOM = F
+DIAG_PLOTS_SELECTION = F
 
 library(subzero)
 library(foreach)
@@ -29,7 +32,7 @@ source(paste0('REFSIM_GenerateSettings_Index.R'))
 RESULTS_DIR = paste0("../../Results/")
 
 RNG_SEED = 1
-REPS_PER_SETTING = 1*NR.WORKERS #NR.WORKERS*3 #(29)*7 #200
+REPS_PER_SETTING = 1*NR.WORKERS 
 
 if(DEBUG){
   
@@ -46,19 +49,22 @@ METHOD_LABEL_WILCOXON_qPCR    = "WILCOXON_qPCR"
 METHOD_LABEL_WILCOXON_PERCENT = "WILCOXON_PERCENT"
 METHOD_LABEL_WILCOXON_PAULSON = "WILCOXON_PAULSON"
 
-PS_used = 10
+PS_used = 1
+Use_Median = F
+SET_OF_SCENARIOS_ANCOM_ALL_FEATURES = -1
 
 df_selection_method = data.frame(MethodName = NA, is_Oracle = NA, Median_SD_Threshold = NA, All_Oracle = NA, RandomSize = NA, stringsAsFactors = F)
 df_selection_method[1,]                            = c('S = 1.3'          ,F, 1.3,F,NA)
 
-if(!DEBUG ){
-  # df_selection_method[1,]                            = c('S = 1.1'          ,F, 1.1,F,NA)
-  # df_selection_method[nrow(df_selection_method) +1,] = c('S = 1.2'          ,F, 1.2,F,NA)
-  # df_selection_method[nrow(df_selection_method) +1,] = c('S = 1.3'          ,F, 1.3,F,NA)
-  # df_selection_method[nrow(df_selection_method) +1,] = c('S = 1.4'          ,F, 1.4,F,NA)
-  # df_selection_method[nrow(df_selection_method) +1,] = c('S=1.4, Oracle'   ,T, 1.4,F,NA)  
-  df_selection_method[1,]                            = c('Smean'          ,F, -1,F,NA)
-  df_selection_method[nrow(df_selection_method) +1,] = c('Smean, Oracle'   ,T, -1,F,NA)
+if(!DEBUG){
+ #df_selection_method[1,] = c('S = 1.3'          ,F, 1.3, F,NA)
+ #df_selection_method[nrow(df_selection_method) +1,] = c('S = 1.4, Oracle'    ,T, 1.4, F,NA)
+ 
+ df_selection_method[1,]                            = c('S = 1.1'          ,F, 1.1, F,NA)
+ df_selection_method[nrow(df_selection_method) +1,] = c('S = 1.2'          ,F, 1.2, F,NA)
+ df_selection_method[nrow(df_selection_method) +1,] = c('S = 1.3'          ,F, 1.3, F,NA)
+ df_selection_method[nrow(df_selection_method) +1,] = c('S = 1.4'          ,F, 1.4, F,NA)
+ df_selection_method[nrow(df_selection_method) +1,] = c('S = 1.4, Oracle'    ,T, 1.4, F,NA)
 }
 
 NR_METHODS = 3*(nrow(df_selection_method)) +7 # 7 for ANCOMX3 and WILCOXON + percent + Paulson + qPCR,  for dfdr with "mean log +1"
@@ -159,7 +165,7 @@ Worker_Function = function(core_nr){
         
         ref_select = select.references.Median.SD.Threshold(X = data$X,
                                                            median_SD_threshold = ref_select_method_Median_SD_Threshold,
-                                                           minimal_TA = 10,maximal_TA = 200,select_from = to_select_from,Psuedo_Count_used = PS_used)
+                                                           minimal_TA = 10,maximal_TA = 200,select_from = to_select_from,Psuedo_Count_used = PS_used,factor_by_Median_Score = Use_Median)
         
         Selected_References = ref_select$selected_references
                                                       

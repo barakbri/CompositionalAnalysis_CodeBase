@@ -3,8 +3,8 @@ library(doRNG)
 library(doParallel)
 
 
-cases_mat = expand.grid(lambda = c(30,60),m = c(50,100),sample_size = c(20,50))
-B = 50#200
+cases_mat = expand.grid(lambda = c(30,60),m = c(50,100),sample_size = c(50,100))
+B = 200
 
 
 compute_FWER_for_case = function(case_id,B){
@@ -29,16 +29,14 @@ compute_FWER_for_case = function(case_id,B){
   return(FWER)
 
 }
-# set.seed(1)
-# res = NULL
-# for(i in 1:nrow(cases_mat)){
-#   res = rbind(res,compute_FWER_for_case(i,B))
-# }
-
+print('Start Time')
+print(Sys.time())
 cl <- makeCluster(8)
 registerDoParallel(cl)
 res <- foreach(i=1:nrow(cases_mat), .options.RNG=1,.combine = rbind) %dorng% { compute_FWER_for_case(i,B) }
 stopCluster(cl)
+print('Stop Time')
+print(Sys.time())
 
 
 res_mat = cbind(cases_mat,res)
@@ -48,7 +46,7 @@ for(i in 1:3){
 }
 
 
-save(res_mat,file = 'C:/MCB2/Results/ANCOM_T1E_SIM.Rdata')
+save(res_mat,file = '../../Results/ANCOM_T1E_SIM.Rdata')
 
 library(xtable)
 print(xtable(res_mat), include.rownames=FALSE)

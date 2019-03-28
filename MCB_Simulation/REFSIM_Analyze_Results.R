@@ -1,30 +1,48 @@
-BATCH_VEC = c(30:40,66:75,76:79)
-
-
-
-MAINDIR = '~/'
-RESULTS_DIR = paste0(MAINDIR,"/Results/")
-REFSIM_aggregated_results_file = function(RESULTS_DIR,SCENARIO_ID){
-  return(paste0(RESULTS_DIR,'/REFSIM_aggregated_results_',SCENARIO_ID,'.RData'))
+BATCH_VEC = c(1:25)
+source(paste0('REFSIM_GenerateSettings_Index.R'))
+RESULTS_DIR = paste0("../../Results/")
+REFSIM_aggregated_results_file = function(RESULTS_DIR,SCENARIO_ID,suffix = ""){ #suffix "sd_" for sd
+  return(paste0(RESULTS_DIR,'/REFSIM_aggregated_results_',suffix,SCENARIO_ID,'.RData'))
 }
 
-ROW_ORDER = c(2:3)#c(1:4)
 
-filename = REFSIM_aggregated_results_file(RESULTS_DIR,BATCH_VEC[1])
-load(file = filename)
-results_all_settings = aggregated_results#[ROW_ORDER,]
-
-for(s in (2):length(BATCH_VEC)){
-  
-  filename = REFSIM_aggregated_results_file(RESULTS_DIR,BATCH_VEC[s])
+combine_to_file = function(file,suffix){
+  filename = REFSIM_aggregated_results_file(RESULTS_DIR,BATCH_VEC[1],suffix = suffix)
   load(file = filename)
-  results_all_settings = rbind(results_all_settings, aggregated_results)#[ROW_ORDER,])
+  if(suffix == '')
+    results_all_settings = aggregated_results
+  if(suffix == 'sd_'){
+    temp = aggregated_results_sd
+    temp$setting_id = 1
+    results_all_settings = temp
+  }
+    
+  
+  for(s in (2):length(BATCH_VEC)){
+    
+    filename = REFSIM_aggregated_results_file(RESULTS_DIR,BATCH_VEC[s],suffix = suffix)
+    load(file = filename)
+    if(suffix == '')
+      results_all_settings = rbind(results_all_settings, aggregated_results)
+    if(suffix == 'sd_'){
+      temp = aggregated_results_sd
+      temp$setting_id = s
+      results_all_settings = rbind(results_all_settings, temp,suffix = suffix)
+    }
+      
+    
+  }
+  
+  settings_names = rep(NA,length(REFSIM_SETTINGS_LIST))
+  for(i in 1:length(settings_names))
+    settings_names[i] = REFSIM_SETTINGS_LIST[[i]]$label
+  results_all_settings$setting_name = settings_names[results_all_settings$setting_id]
+  
+  
+  write.csv(results_all_settings,file = paste0(RESULTS_DIR,file))
+  
 }
 
-settings_names = rep(NA,length(REFSIM_SETTINGS_LIST))
-for(i in 1:length(settings_names))
-  settings_names[i] = REFSIM_SETTINGS_LIST[[i]]$label
-results_all_settings$setting_name = settings_names[results_all_settings$setting_id]
+combine_to_file('REFSIM_Combined_Results.csv','')
+combine_to_file('REFSIM_Combined_Results_sd.csv','sd_')
 
-
-write.csv(results_all_settings,file = paste0(RESULTS_DIR,'REFSIM_Combined_Results.csv'))
