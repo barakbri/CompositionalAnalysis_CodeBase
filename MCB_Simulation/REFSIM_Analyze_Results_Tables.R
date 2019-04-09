@@ -77,10 +77,15 @@ Compute_SE_for_Scenarios = function(scenarios_vec,B=72,col = 'fdr'){
 
 Compute_SE_for_Scenarios(1:11)
 Compute_SE_for_Scenarios(1:11,col = 'tp')
+library(latex2exp)
+gg_color_hue <- function(n) {
+  hues = seq(15, 375, length = n + 1)
+  hcl(h = hues, l = 65, c = 100)[1:n]
+}
 
 
-dt_FDR_Plot = dt_FDR[,c(1,2,3,4:7)]# NEED # for ANCOM
-names(dt_FDR_Plot)[4:7] = c('W-CSS','W-TSS','W-FLOW','W-COMP') #4:7 With ANCOM removed
+dt_FDR_Plot = dt_FDR[,c(1,2,3,4:8)]# NEED # for ANCOM
+names(dt_FDR_Plot)[4:8] = c('W-CSS','W-TSS','W-FLOW','W-COMP','HG') #4:7 With ANCOM removed
 dt_FDR_Plot_melt = reshape2::melt(dt_FDR_Plot,id.vars = c('m1','effect'),value.name = 'FDR')
 dt_FDR_Plot_melt_GLOBAL_NULL_m1_10 = dt_FDR_Plot_melt[which(dt_FDR_Plot_melt$m1==0),]
 dt_FDR_Plot_melt_GLOBAL_NULL_m1_100 = dt_FDR_Plot_melt[which(dt_FDR_Plot_melt$m1==0),]
@@ -91,8 +96,10 @@ names(dt_FDR_Plot_melt)[3] = 'Method'
 names(dt_FDR_Plot_melt)[2] = 'Effect'
 dt_FDR_Plot_melt = dt_FDR_Plot_melt[-which(dt_FDR_Plot_melt$m1==0),]
 dt_FDR_Plot_melt$m1 = factor(dt_FDR_Plot_melt$m1,levels = c(10,100),labels = c('m1 = 10','m1 = 100'))
-p_1_FDR = ggplot(dt_FDR_Plot_melt,aes(x=Effect,y = FDR,color = Method))+geom_line(lwd = 0.6) + geom_point() + facet_wrap(m1~.) + theme_bw()+geom_hline(yintercept = 0.1,color = 'black',lty = 2)
-ggsave(p_1_FDR,filename = '../../Results/sim_p1_poster_FDR.pdf',width = 7,height = 3)
+p_1_FDR = ggplot(dt_FDR_Plot_melt,aes(x=Effect,y = FDR,color = Method))+geom_line(lwd = 0.6) + geom_point() +
+  facet_wrap(m1~.) + theme_bw()+geom_hline(yintercept = 0.1,color = 'black',lty = 2)+xlab(TeX("$\\lambda_{effect}$")) +
+  scale_color_manual(labels =  c('ANCOM','W-CSS','W-TSS','W-FLOW','W-COMP','HG'),values=gg_color_hue(6)[1:6])
+ggsave(p_1_FDR,filename = '../../Results/sim_p1_FDR.pdf',width = 7,height = 3)
 
 
 
@@ -103,8 +110,10 @@ dt_TP_Plot_melt = dt_TP_Plot_melt[-which(dt_TP_Plot_melt$m1 == 0),]
 names(dt_TP_Plot_melt)[3] = 'Method'
 names(dt_TP_Plot_melt)[2] = 'Effect'
 dt_TP_Plot_melt$m1 = factor(dt_TP_Plot_melt$m1,levels = c(10,100),labels = c('m1 = 10','m1 = 100'))
-p_1_TP = ggplot(dt_TP_Plot_melt,aes(x=Effect,y = TP,color = Method))+geom_line(lwd = 0.6)+geom_point()+facet_wrap(m1~.,scales = "free") + theme_bw()
-ggsave(p_1_TP,filename = '../../Results/sim_p1_poster_TP.pdf',width = 7,height = 3)
+p_1_TP = ggplot(dt_TP_Plot_melt,aes(x=Effect,y = TP,color = Method))+geom_line(lwd = 0.6)+geom_point()+
+  facet_wrap(m1~.,scales = "free") + theme_bw() +xlab(TeX("$\\lambda_{effect}$"))+
+  scale_color_manual(labels =  c('ANCOM','W-CSS','W-TSS','W-FLOW','W-COMP'),values=gg_color_hue(6)[1:5])
+ggsave(p_1_TP,filename = '../../Results/sim_p1_TP.pdf',width = 7,height = 3)
 
 #table 2
 
