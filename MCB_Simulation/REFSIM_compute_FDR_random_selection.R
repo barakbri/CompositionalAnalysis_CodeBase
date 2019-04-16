@@ -1,5 +1,5 @@
 NR.WORKERS = 7
-SCENARIO_ID = 21 #3,10,16,25 #need to compute for all of these
+#SCENARIO_ID = 21 #2,3,10,11,12,16,17,21,25 #need to compute for all of these
 MAINDIR = './'
 Q_LEVEL = 0.1
 
@@ -12,6 +12,8 @@ CORRECTION_TYPE_WILCOXON = 'BH'
 
 MODE_RUN_SIMULATION = T
 MODE_COMPUTE_GLOBAL_NULL = T
+if(SCENARIO_ID %in% c(22:25))
+  MODE_COMPUTE_GLOBAL_NULL = F
 MODE_COMPUTE_RANDOM_SELECT_FDR = F
 MODE_PROCESS_RESULTS = T
 DEBUG = F
@@ -215,19 +217,23 @@ if(MODE_PROCESS_RESULTS){
   
   filename = REFSIM_aggregated_results_file(RESULTS_DIR,SCENARIO_ID)
   sink(filename)
-  print('FDR - random')
-  print(mean(combined_results_FDR_random))
-  print('FDR - random - sd')
-  print(sd(combined_results_FDR_random)/sqrt(length(combined_results_FDR_random)))
-  print('FDR - most abundant')
-  print(mean(combined_results_FDR_most_abundant))
-  print('FDR -  most abundant- sd')
-  print(sd(combined_results_FDR_most_abundant)/sqrt(length(combined_results_FDR_most_abundant)))
-  
-  print('nr_reject_GN')
-  print(nr_reject_GN)
-  print('Error in T1E estimation;2*SE')
-  print(round(1.96*sqrt(GlobalNull.Test.Alpha*(1-GlobalNull.Test.Alpha)/(NR_REPS_PER_WORKER*NR.WORKERS)),3))
+  if(MODE_COMPUTE_RANDOM_SELECT_FDR){
+    print('FDR - random')
+    print(mean(combined_results_FDR_random))
+    print('FDR - random - sd')
+    print(sd(combined_results_FDR_random)/sqrt(length(combined_results_FDR_random)))
+    print('FDR - most abundant')
+    print(mean(combined_results_FDR_most_abundant))
+    print('FDR -  most abundant- sd')
+    print(sd(combined_results_FDR_most_abundant)/sqrt(length(combined_results_FDR_most_abundant)))
+    
+  }
+  if(MODE_COMPUTE_GLOBAL_NULL){
+    print('nr_reject_GN')
+    print(nr_reject_GN)
+    print('Error in T1E estimation;2*SE')
+    print(round(1.96*sqrt(GlobalNull.Test.Alpha*(1-GlobalNull.Test.Alpha)/(NR_REPS_PER_WORKER*NR.WORKERS)),3))  
+  }
   sink()
   
   cat(paste0('Done scenario ',SCENARIO_ID,' \n\r'))
