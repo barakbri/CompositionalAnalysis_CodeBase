@@ -57,22 +57,28 @@ for(SCENARIO_ID in 1:25){
 write.csv(ref_selection_results,file = paste0(RESULTS_DIR,'/Ref_Selction_Compare_results.csv'))
 
 
-
-SCENARIO_REPS = 5
+set.seed(1)
+SCENARIO_REPS = 10
 m1_scores_list = list()
 SCENARIO_TO_COMPUTE_vec = c(1:25)
 vec_of_scores = NULL
+ref_size_list = list()
+vec_of_ref_size = NULL
 for(SCENARIO_ID in SCENARIO_TO_COMPUTE_vec){
   print(paste0('Doing scenario ',SCENARIO_ID))
   current_setting_generator = REFSIM_SETTINGS_LIST[[SCENARIO_ID]]  
   vec_of_scores = NULL
+  vec_of_ref_size = NULL
   for(r in 1:SCENARIO_REPS){
     print(paste0('r: ',r))
     data = REFSIM_generate_setting_wrapper(current_setting_generator)  
     ref_select = select.references.Median.SD.Threshold(X = data$X,median_SD_threshold = 1.3,minimal_TA = 10,maximal_TA = 200)
     vec_of_scores = c(vec_of_scores,ref_select$scores[data$select_diff_abundant])
+    vec_of_ref_size = c(vec_of_ref_size,length(ref_select$selected_references))
   }
   m1_scores_list[[SCENARIO_ID]] = vec_of_scores
+  ref_size_list[[SCENARIO_ID]] = vec_of_ref_size
+  print(paste0('Mean ref size: ',mean(vec_of_ref_size),' SD: ',sd(vec_of_ref_size)))
 }
 
 MIN_REFSCORE_H1 = SCENARIO_TO_COMPUTE_vec
