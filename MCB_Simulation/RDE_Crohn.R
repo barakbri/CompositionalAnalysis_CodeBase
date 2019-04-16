@@ -346,3 +346,15 @@ pdf(file = '../../Results/Crohn_shared_rare.pdf',height = 6,width = 7)
 venn(disc_list_plot_rare)
 dev.off()
 
+
+#intersection of all subzero rejections:
+rej_list = list()
+for(i in 2:4){
+  rej_list[[i]] = subzero_rejections = which(p.adjust(res_Wilcoxon_list[[i]]$p.values.test,method = 'BH')<=Q_LEVEL)
+  
+}
+inter_set = rej_list[[2]]
+for(i in 2:4){
+  inter_set = intersect(inter_set,rej_list[[i]])  
+}
+length(inter_set) #78
