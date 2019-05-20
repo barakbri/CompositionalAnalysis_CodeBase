@@ -245,7 +245,7 @@ if(!is.null(selected_references) & length(selected_references) <= dim(X_2)[2] - 
     print(paste0('Computing DS-FDR'))
   
   res_dsfdr = subzero.dfdr.test(X = X_2,Y,as.numeric(selected_references),
-                                nr_perm = ceiling(1/(Q/(dim(X_2)[2]))),verbose = F,q = Q)
+                                nr_perm = 30000,verbose = F,q = Q) #ceiling(1/(Q/(dim(X_2)[2])))
   results_to_save$res_dsfdr = res_dsfdr
   
   rejected = res_dsfdr$rejected

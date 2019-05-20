@@ -170,7 +170,7 @@ subzero.dfdr.test = function(X,y,nr_reference_taxa,
     
     min_value = ceiling( lambda_multiplier * min(total_reads_per_subject) )
     min_value_array[i] = min_value
-    to_keep = which(total_reads_per_subject > min_value)
+    to_keep = which(total_reads_per_subject >= min_value)
     
     z_keep = z
     

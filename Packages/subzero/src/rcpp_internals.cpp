@@ -141,8 +141,6 @@ double Compute_TwoPartTest(NumericVector X, IntegerVector Y, NumericVector addit
   
   double N_dbl_Wilcoxon = nr_samples_1_non_zero + nr_samples_0_non_zero;
   
-  //double N_dbl = nr_samples_1 + nr_samples_0;
-    
   double Mean_Wilcoxon = nr_samples_1_non_zero * (N_dbl_Wilcoxon + 1) / 2.0;
   
   double Var_Wilcoxon = nr_samples_0_non_zero * nr_samples_1_non_zero * (N_dbl_Wilcoxon + 1) / 12.0;
@@ -155,10 +153,14 @@ double Compute_TwoPartTest(NumericVector X, IntegerVector Y, NumericVector addit
   
   double phat_1 = counts_zeros_1 / nr_samples_1;
   
-  double Z_proportion = (phat_0 - phat_1) / std::sqrt(phat_pooled * (1.0 - phat_pooled)*(1.0/nr_samples_1 + 1.0/nr_samples_0));
+  double stat = Z_wilcoxon * Z_wilcoxon;
   
-  double stat = Z_wilcoxon * Z_wilcoxon + Z_proportion * Z_proportion;
+  double Z_proportion = 0;
   
+  if(counts_zeros_0 + counts_zeros_1 >0){
+    Z_proportion = (phat_0 - phat_1) / std::sqrt(phat_pooled * (1.0 - phat_pooled)*(1.0/nr_samples_1 + 1.0/nr_samples_0));
+    stat +=Z_proportion * Z_proportion;
+  }
   
   additional_return_values[0] = Z_proportion;
   additional_return_values[1] = Z_wilcoxon;

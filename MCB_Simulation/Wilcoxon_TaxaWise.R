@@ -1,4 +1,4 @@
-wilcoxon_taxa_wise = function(X,y,normalize = F,normalize.P = 1.0,paired = F){
+wilcoxon_taxa_wise = function(X,y,normalize = F,normalize.P = 1.0,nr.perms = 1/(0.05/ncol(X))){
   pvals = rep(NA,ncol(X))
   if(normalize){
     normalizer.vec = rep(1,nrow(X))
@@ -10,7 +10,8 @@ wilcoxon_taxa_wise = function(X,y,normalize = F,normalize.P = 1.0,paired = F){
     }
   }
   for(i in 1:ncol(X)){
-      pvals[i] = wilcox.test(X[y==0,i],X[y==1,i],exact = F,paired = paired)$p.value
+      #pvals[i] = wilcox.test(X[y==0,i],X[y==1,i],exact = F,paired = paired)$p.value
+    pvals[i] = subzero::PermSumCount.test(X = X[,i],Y = y,B = nr.perms,DoWald = as.integer(0))$p.value
     if(is.nan(pvals[i])){pvals[i] = 1}
   }
   ret = list()

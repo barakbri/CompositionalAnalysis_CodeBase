@@ -153,11 +153,11 @@ X_corrected = X_corrected[,-to_remove]
 
 
 
-
+NR.PERMS = 100000
 
 #Wilcoxon over the corrected
 source('Wilcoxon_TaxaWise.R')
-res_Wilcoxon_corrected = wilcoxon_taxa_wise(X_corrected,y = Y)
+res_Wilcoxon_corrected = wilcoxon_taxa_wise(X_corrected,y = Y,nr.perms = NR.PERMS)
 hist(res_Wilcoxon_corrected$p.values)
 total_counts_in_taxa = as.numeric(apply(prevalence_matrix,2,sum))
 
@@ -189,7 +189,7 @@ intersect_with_ANCOM = function(ANCOM_res,subzero_rejections){
 
 #Checking subzero/thac0
 library(subzero)
-median_SD_thres_Vec = seq(1.1, 1.9, 0.1) #seq(1.0,1.4,0.05)
+median_SD_thres_Vec = seq(0.8, 1.8, 0.1) #seq(1.0,1.4,0.05)
 lambda_multiplier_Vec = c(1.0)
 PS_value = 1
 parameter_matrix = expand.grid(lambda_multiplier_Vec = lambda_multiplier_Vec ,
@@ -204,6 +204,7 @@ set.seed(1)
 filepath_i = function(i){return(paste0('../../Results/Gut_temp_v2_file_',i,'.RData'))}
 
 for(i in 1:nrow(parameter_matrix)){
+  set.seed(1) # for reproducability of permutations
   current_thres = parameter_matrix$median_SD_thres_Vec[i]
   current_multiplier = parameter_matrix$lambda_multiplier_Vec[i]
   
@@ -223,13 +224,14 @@ for(i in 1:nrow(parameter_matrix)){
   print(paste0('Running subzero , mult = ',current_multiplier))
   res_perm_Wilcoxon = subzero::subzero.dfdr.test(X = X,y = Y,
                                                  nr_reference_taxa = current_selected_ref_obj$selected_references,verbose = F,q = Q_LEVEL,
-                                                 nr_perm = 30000)
+                                                 nr_perm = NR.PERMS)
   res_Wilcoxon_list[[i]] = res_perm_Wilcoxon
   temp_obj = list(current_selected_ref_obj = current_selected_ref_obj,
                   res_perm_Wilcoxon = res_perm_Wilcoxon)
   current_temp_filepath_i = filepath_i(i)
   save(temp_obj,file = current_temp_filepath_i)
 }
+
 #load
 ref_list = list()
 res_Wilcoxon_list = list()
@@ -276,13 +278,14 @@ length(ANCOM_default_res$detected)
 length(disc_Wilcoxon_corrected)
 
 X_CSS = t(metagenomeSeq::cumNormMat(t(X)))
-res_Wilcoxon_Paulson = wilcoxon_taxa_wise(X_CSS,Y,normalize = F,normalize.P = 1)
+res_Wilcoxon_Paulson = wilcoxon_taxa_wise(X_CSS,Y,normalize = F,normalize.P = 1,nr.perms = NR.PERMS)
+
 hist(res_Wilcoxon_Paulson$p.values)
 disc_Wilcoxon_Paulson = which(p.adjust(res_Wilcoxon_Paulson$p.values,method = 'BH')<=Q_LEVEL)
 length(disc_Wilcoxon_Paulson)
 sum(disc_Wilcoxon_Paulson %in% disc_Wilcoxon_corrected)
 
-res_Wilcoxon_Percent = wilcoxon_taxa_wise(X_corrected,y = Y,normalize = T,normalize.P = 1)
+res_Wilcoxon_Percent = wilcoxon_taxa_wise(X_corrected,y = Y,normalize = T,normalize.P = 1,nr.perms = NR.PERMS)
 hist(res_Wilcoxon_Percent$p.values)
 
 
@@ -294,10 +297,10 @@ disc_vec_ANCOM = which(colnames(ANCOM_otu_dat)%in% ANCOM_default_res$detected),
 disc_Wilcoxon_corrected = disc_Wilcoxon_corrected ,
 disc_Wilcoxon_Paulson = disc_Wilcoxon_Paulson,
 disc_Wilcoxon_percent = disc_Wilcoxon_percent,
-RAR = which(p.adjust(res_Wilcoxon_list[[3]]$p.values.test,method = 'BH')<=Q_LEVEL)
+RAR = which(p.adjust(res_Wilcoxon_list[[which(median_SD_thres_Vec == 1.3)]]$p.values.test,method = 'BH')<=Q_LEVEL)
 )
 
-method_names = c('ANCOM','WIL-FLOW','WIL-CSS','WIL-TSS','RAR')
+method_names = c('ANCOM','WIL-FLOW','WIL-CSS','WIL-TSS','W-COMP')
 shared_disc_mat = matrix(NA,nrow = length(method_names),ncol = length(method_names))
 rownames(shared_disc_mat) = method_names
 colnames(shared_disc_mat) = method_names
@@ -348,13 +351,24 @@ dev.off()
 
 
 #intersection of all subzero rejections:
+
 rej_list = list()
-for(i in 2:4){
-  rej_list[[i]] = subzero_rejections = which(p.adjust(res_Wilcoxon_list[[i]]$p.values.test,method = 'BH')<=Q_LEVEL)
+for(i in 5:7){
+  rej_list[[i]]  = which(p.adjust(res_Wilcoxon_list[[i]]$p.values.test,method = 'BH')<=Q_LEVEL)
   
 }
-inter_set = rej_list[[2]]
-for(i in 2:4){
+inter_set = rej_list[[5]]
+for(i in 5:7){
   inter_set = intersect(inter_set,rej_list[[i]])  
 }
-length(inter_set) #78
+length(inter_set) #82
+
+
+#Check reference validity
+set.seed(1)
+ref_indices = ref_list[[1]]$selected_references
+X_ref = X[,ref_indices]
+#image(t(log10(X_ref+1)))
+library(wcomp)
+ref_check = wcomp::wcomp.check_reference_set_is_valid.k_groups(matrix(as.integer(X_ref),nrow = nrow(X_ref),ncol = ncol(X_ref)),Y,nr.perm = 1000,verbose = T)
+ref_check

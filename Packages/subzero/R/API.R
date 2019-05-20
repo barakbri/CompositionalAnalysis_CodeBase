@@ -95,14 +95,14 @@ TwoPartTest.test = function(X,Y,B = as.integer(c(40000)),DoWald = as.integer(c(1
     Z_Wilcoxon_Asymptotic = 0
   }
   
-  
-  if(is.na(Z_proportion)){
+  no_zeros_found = (counts_zeros_0 + counts_zeros_1 == 0)
+  if(no_zeros_found){
     Z_proportion = 0
   }
   
   stat_ties_corrected = Z_Wilcoxon_Asymptotic^2 + Z_proportion^2
   
-  ret = list(stat = res[[1]],p.value = res[[2]],b = res[[3]],asymp.pval = 1-pchisq(stat_ties_corrected,2))  
+  ret = list(stat = res[[1]],p.value = res[[2]],b = res[[3]],asymp.pval = 1-pchisq(stat_ties_corrected,1+1*(no_zeros_found)))  
   if(return_perms)
     ret$perms = res[[4]]
   return(ret)

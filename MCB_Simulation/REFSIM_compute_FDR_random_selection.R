@@ -197,21 +197,24 @@ if(MODE_PROCESS_RESULTS){
   }
   if(MODE_COMPUTE_GLOBAL_NULL){
     flatten_GN_NULL_LIST = function(l,contains_diff_abun){
-      temp = 1*(unlist(l[[1]]) < GlobalNull.Test.Alpha)
+      temp = 1*(unlist(l[[1]]) < GlobalNull.Test.Alpha) * (contains_diff_abun[1] == 0)
       if(length(l)>1){
         for(i in 2:length(l)){
-          temp = temp +1*(unlist(l[[i]]) < GlobalNull.Test.Alpha)  
+          temp = temp +1*(unlist(l[[i]]) < GlobalNull.Test.Alpha) * (contains_diff_abun[i] == 0)
         }
       }
       return(temp)
     }
+    
     nr_reject_GN = flatten_GN_NULL_LIST(res[[1]]$GN_NULL_LIST,res[[1]]$CONTAINS_DIFF_ABUNDANT)
+    nr_GN_cases = sum(res[[1]]$CONTAINS_DIFF_ABUNDANT == 0)
     if(length(res)>1){
       for(i in 2:length(res)){
         nr_reject_GN = nr_reject_GN + flatten_GN_NULL_LIST(res[[i]]$GN_NULL_LIST,res[[i]]$CONTAINS_DIFF_ABUNDANT)
+        nr_GN_cases = nr_GN_cases + sum(res[[i]]$CONTAINS_DIFF_ABUNDANT == 0)
       }    
     }  
-    nr_reject_GN = nr_reject_GN/(NR_REPS_PER_WORKER*NR.WORKERS)
+    nr_reject_GN = nr_reject_GN/nr_GN_cases# (NR_REPS_PER_WORKER*NR.WORKERS) is replaced by the actual number of valid (no DA inside) references
   }
   
   
@@ -230,9 +233,9 @@ if(MODE_PROCESS_RESULTS){
   }
   if(MODE_COMPUTE_GLOBAL_NULL){
     print('nr_reject_GN')
-    print(nr_reject_GN)
+    print(round(nr_reject_GN,2))
     print('Error in T1E estimation;2*SE')
-    print(round(1.96*sqrt(GlobalNull.Test.Alpha*(1-GlobalNull.Test.Alpha)/(NR_REPS_PER_WORKER*NR.WORKERS)),3))  
+    print(round(1.96*sqrt(GlobalNull.Test.Alpha*(1-GlobalNull.Test.Alpha)/(nr_GN_cases)),3))  
   }
   sink()
   
