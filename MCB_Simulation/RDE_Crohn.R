@@ -372,3 +372,60 @@ X_ref = X[,ref_indices]
 library(wcomp)
 ref_check = wcomp::wcomp.check_reference_set_is_valid.k_groups(matrix(as.integer(X_ref),nrow = nrow(X_ref),ncol = ncol(X_ref)),Y,nr.perm = 1000,verbose = T)
 ref_check
+
+
+#ALDEx2
+sort(as.numeric(apply((X > 0),2,sum)))# check we have no zeros so aldex 2
+
+set.seed(1)
+aldex.res.iqlr <- aldex(t(X), as.character(Y), mc.samples=1, denom="iqlr",
+                        test="t", effect=FALSE)
+aldex.res.zero <- aldex(t(X), as.character(Y), mc.samples=1, denom="zero",
+                        test="t", effect=FALSE)
+
+hist(aldex.res.iqlr$wi.ep)
+hist(aldex.res.iqlr$we.ep)
+hist(aldex.res.zero$wi.ep)
+hist(aldex.res.zero$we.ep)
+
+rejected.iqlr.wi = p.adjust(aldex.res.iqlr$wi.ep,method = 'BH')<=0.1
+rejected.iqlr.we = p.adjust(aldex.res.iqlr$we.ep,method = 'BH')<=0.1
+rejected.zero.wi = p.adjust(aldex.res.zero$wi.ep,method = 'BH')<=0.1
+rejected.zero.we = p.adjust(aldex.res.zero$we.ep,method = 'BH')<=0.1
+
+sum(rejected.iqlr.wi)
+sum(rejected.iqlr.we)
+sum(rejected.zero.wi)
+sum(rejected.zero.we)
+
+length(rej_list[[6]])
+length(which(which(rejected.iqlr.wi) %in% rej_list[[6]]))
+length(which(which(rejected.iqlr.we) %in% rej_list[[6]]))
+length(which(which(rejected.zero.wi) %in% rej_list[[6]]))
+length(which(which(rejected.zero.we) %in% rej_list[[6]]))
+
+
+
+### new shared disc matrix
+disc_list = list(
+  disc_vec_ANCOM = which(colnames(ANCOM_otu_dat)%in% ANCOM_default_res$detected),
+  disc_Wilcoxon_corrected = disc_Wilcoxon_corrected ,
+  disc_Wilcoxon_Paulson = disc_Wilcoxon_Paulson,
+  disc_Wilcoxon_percent = disc_Wilcoxon_percent,
+  RAR = which(p.adjust(res_Wilcoxon_list[[which(median_SD_thres_Vec == 1.3)]]$p.values.test,method = 'BH')<=Q_LEVEL),
+  ALDEx2 = which(rejected.iqlr.wi)
+)
+
+method_names = c('ANCOM','WIL-FLOW','WIL-CSS','WIL-TSS','W-COMP','ALDEx2')
+shared_disc_mat = matrix(NA,nrow = length(method_names),ncol = length(method_names))
+rownames(shared_disc_mat) = method_names
+colnames(shared_disc_mat) = method_names
+for(i in 1:length(method_names)){
+  for(j in i:length(method_names)){
+    shared_disc_mat[i,j] = sum(disc_list[[i]] %in% disc_list[[j]])
+  }
+}
+
+write.csv(shared_disc_mat,file = '../../Results/gut_qPCR_shared_disc_mat_with_ALDEx2.csv')
+
+
