@@ -47,9 +47,9 @@ for(e_i in 1:3){
   plot(X, points_F_PC, type = 'l',main = paste0('w = ',effect),xlab = 'P-value',ylab = 'CDF',asp = 1)
   lines(X, points_F_NewDef, type = 'l',col = 'black',lty = 2)
   lines(c(0,1),c(0,1),lty = 1,col = 'gray')
-  print(c(paste0('T1E, "+1" = ',round(mean(pval.vec.PC<=0.1),2)),
-                                        paste0('T1E, \"0/0 -> 0\" = ',round(mean(pval.vec.NewDef<=0.1),2))
-                                        ))
+  # print(c(paste0('T1E, "+1" = ',round(mean(pval.vec.PC<=0.1),2)),
+  #                                       paste0('T1E, \"0/0 -> 0\" = ',round(mean(pval.vec.NewDef<=0.1),2))
+  #                                       ))
   #legend(0.25, 0.18, legend = c(paste0('T1E, "+1" = ',round(mean(pval.vec.PC<=0.1),2)),
   #                              paste0('T1E, \"0/0 -> 0\" = ',round(mean(pval.vec.NewDef<=0.1),2))
   #                              ), text.col = c('black','black'),lty = c(1,2))
