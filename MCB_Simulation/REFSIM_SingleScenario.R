@@ -1,5 +1,5 @@
 NR.WORKERS = 72 #63#72-1#63
-#SCENARIO_ID = 11
+SCENARIO_ID = 25
 MAINDIR = './'
 Q_LEVEL = 0.1
 
@@ -12,18 +12,20 @@ CORRECTION_TYPE_WILCOXON = 'BH'
 
 MODE_RUN_SIMULATION = T
 MODE_PROCESS_RESULTS = T
-DEBUG = F
-DEBUG.SINGLE.CORE = F
-DISABLE_ANCOM = F
-DIAG_PLOTS_SELECTION = F
+DEBUG = T
+DEBUG.SINGLE.CORE = T
+DISABLE_ANCOM = T
 
-library(subzero)
+library(dacomp)
 library(foreach)
 library(doParallel)
 library(doRNG)
 library(ancom.R)
 library(phyloseq)
 library(metagenomeSeq)
+library(ALDEx2)
+library(Wrench)
+library(DESeq2)
 
 source(paste0('Wilcoxon_TaxaWise.R'))
 source(paste0('exactHyperGeometricTest.R'))
@@ -36,7 +38,7 @@ REPS_PER_SETTING = 1*NR.WORKERS
 
 if(DEBUG){
   
-  NR.WORKERS = 7
+  NR.WORKERS = 1
   REPS_PER_SETTING = 1*NR.WORKERS
   
 }
@@ -48,6 +50,15 @@ METHOD_LABEL_WILCOXON_NAIVE   = "WILCOXON_NAIVE"
 METHOD_LABEL_WILCOXON_qPCR    = "WILCOXON_qPCR"
 METHOD_LABEL_WILCOXON_PERCENT = "WILCOXON_PERCENT"
 METHOD_LABEL_WILCOXON_PAULSON = "WILCOXON_PAULSON"
+METHOD_LABEL_ALDEx2_Welch     = "ALDEx2_Welch"
+METHOD_LABEL_ALDEx2_Wilcoxon  = "ALDEx2_Wilcoxon"
+METHOD_LABEL_Wrench  = "Wrench"
+
+PREFIX_DACOMP_WILCOXON = 'DACOMP,Wilcoxon,'
+PREFIX_DACOMP_WELCH = 'DACOMP,Welch,'
+
+PREFIX_DACOMP_rarefaction = 'rarefaction,'
+PREFIX_DACOMP_division = 'division,'
 
 PS_used = 1
 Use_Median = F
@@ -57,22 +68,24 @@ df_selection_method = data.frame(MethodName = NA, is_Oracle = NA, Median_SD_Thre
 df_selection_method[1,]                            = c('S = 1.3'          ,F, 1.3,F,NA)
 
 if(!DEBUG){
- #df_selection_method[1,] = c('S = 1.3'          ,F, 1.3, F,NA)
- #df_selection_method[nrow(df_selection_method) +1,] = c('S = 1.4, Oracle'    ,T, 1.4, F,NA)
- 
  df_selection_method[1,]                            = c('S = 1.1'          ,F, 1.1, F,NA)
  df_selection_method[nrow(df_selection_method) +1,] = c('S = 1.2'          ,F, 1.2, F,NA)
  df_selection_method[nrow(df_selection_method) +1,] = c('S = 1.3'          ,F, 1.3, F,NA)
+ df_selection_method[nrow(df_selection_method) +1,] = c('S = 1.3, Oracle'  ,T, 1.3, F,NA)
  df_selection_method[nrow(df_selection_method) +1,] = c('S = 1.4'          ,F, 1.4, F,NA)
- df_selection_method[nrow(df_selection_method) +1,] = c('S = 1.4, Oracle'    ,T, 1.4, F,NA)
+ df_selection_method[nrow(df_selection_method) +1,] = c('S = 1.4, Oracle'  ,T, 1.4, F,NA)
 }
 
-NR_METHODS = 3*(nrow(df_selection_method)) +7 # 7 for ANCOMX3 and WILCOXON + percent + Paulson + qPCR,  for dfdr with "mean log +1"
-NR_METHODS_ROWS = 3*(nrow(df_selection_method)) +7 
+NR_METHODS = 4*(nrow(df_selection_method)) +11 # 9+2 for ANCOMX3 and other competitor
+NR_METHODS_ROWS = 4*(nrow(df_selection_method)) +11
 
 #auxilary functions
 REFSIM_results_file = function(RESULTS_DIR,SCENARIO_ID){
   return(paste0(RESULTS_DIR,'/REFSIM_results_',SCENARIO_ID,'.RData'))
+}
+
+REFSIM_warnings_file = function(RESULTS_DIR,SCENARIO_ID){
+  return(paste0(RESULTS_DIR,'/REFSIM_warnings_',SCENARIO_ID,'txt'))
 }
 
 REFSIM_aggregated_results_file = function(RESULTS_DIR,SCENARIO_ID){
@@ -83,17 +96,16 @@ REFSIM_aggregated_results_file_sd = function(RESULTS_DIR,SCENARIO_ID){
   return(paste0(RESULTS_DIR,'/REFSIM_aggregated_results_sd_',SCENARIO_ID,'.RData'))
 }
 
-#QPCR testing function
-
-
-
 # function for scenario based worker
 
 Worker_Function = function(core_nr){
-  library(subzero)
+  library(dacomp)
   library(ancom.R)
   library(phyloseq)
   library(metagenomeSeq)
+  library(ALDEx2)
+  library(Wrench)
+  library(DESeq2)
   
   source(paste0('Wilcoxon_TaxaWise.R'))
   source(paste0('exactHyperGeometricTest.R'))
@@ -163,60 +175,65 @@ Worker_Function = function(core_nr){
         if(ref_select_method_is_Oracle)
           to_select_from = Real_Nulls
         
-        ref_select = select.references.Median.SD.Threshold(X = data$X,
-                                                           median_SD_threshold = ref_select_method_Median_SD_Threshold,
-                                                           minimal_TA = 10,maximal_TA = 200,select_from = to_select_from,Psuedo_Count_used = PS_used,factor_by_Median_Score = Use_Median)
+        ref_select = dacomp::dacomp.select_references(X = data$X,
+                                                      median_SD_threshold = ref_select_method_Median_SD_Threshold,
+                                                      minimal_TA = 10,
+                                                      maximal_TA = 200,
+                                                      Pseudo_Count_used = PS_used,
+                                                      verbose = DEBUG.SINGLE.CORE,
+                                                      select_from = to_select_from)
         
         Selected_References = ref_select$selected_references
                                                       
       }
+      res_wilcoxon = dacomp.test(X = data$X,
+                                 y = data$Y,
+                                 ind_reference_taxa = Selected_References,
+                                 test = DACOMP.TEST.NAME.WILCOXON,
+                                 q = Q_LEVEL,
+                                 nr_perm = 1/(Q_LEVEL/(ncol(data$X))),compute_ratio_normalization = T,verbose = DEBUG.SINGLE.CORE)
       
-      res = subzero.dfdr.test(X = data$X, y = data$Y,
-                                           nr_reference_taxa = Selected_References, verbose = T, nr_perm = 1/(Q_LEVEL/(ncol(data$X))),
-                              q = Q_LEVEL,disable_DS.FDR = F)
-      
-      if(DIAG_PLOTS_SELECTION & !ref_select_method_is_Oracle & !ref_select_method_All_Oracle){
-        ind_plot = function(res,data,ref_select,filename_1,filename_2){
-          pval_H1_test = res$p.values.test
-          pval_H1_ref = res$p.values.ref
-          pval_H0_test = res$p.values.test
-          pval_H0_ref = res$p.values.ref
-          
-          pval_H1_test[-data$select_diff_abundant] = NA
-          pval_H1_ref[-data$select_diff_abundant] = NA
-          pval_H0_test[data$select_diff_abundant] = NA
-          pval_H0_ref[data$select_diff_abundant] = NA
-          png(filename = filename_1,width = 800,height = 800)
-          plot(pval_H0_test,ref_select$scores,xlab = "Pvalue of null hyptheses outside of reference set",ylab = 'reference score',main = 'reference score by Pvalue for null hypotheses tested')  
-          dev.off()
-          png(filename = filename_2,width = 800,height = 800)
-          plot(pval_H0_ref,ref_select$scores,xlab = "Pvalue of null hyptheses inside reference set",ylab = 'reference score',main = 'reference score by Pvalue for null hypotheses not tested')  
-          dev.off()
-        }
-        plots_dir = paste0(RESULTS_DIR,'diagnostic_plots/')
-        if(!dir.exists(plots_dir))
-          dir.create(plots_dir)
-        ind_plot(res,data,ref_select,
-                 paste0(plots_dir,'diag_Scenario_',SCENARIO_ID,'_core_',core_nr,'_rep_',b,'_method_',m,'_test.png'),
-                 paste0(plots_dir,'diag_Scenario_',SCENARIO_ID,'_core_',core_nr,'_rep_',b,'_method_',m,'_ref.png'))  
-      }
-      
+      res_welch = dacomp.test(X = data$X,
+                                 y = data$Y,
+                                 ind_reference_taxa = Selected_References,
+                                 test = DACOMP.TEST.NAME.WELCH_LOGSCALE,
+                                 q = Q_LEVEL,
+                                 nr_perm = 1/(Q_LEVEL/(ncol(data$X))),compute_ratio_normalization = T,verbose = DEBUG.SINGLE.CORE)
       
       bad_select = length(which(ref_select$selected_references %in% data$select_diff_abundant))
       
-      pvals = res$p.values
-      pvals[Selected_References] = NA 
-      pvals_ref = res$p.values
-      pvals_ref[-Selected_References] = NA 
-      rejected = which(p.adjust(pvals,method = CORRECTION_TYPE_SUBZERO) < Q_LEVEL) #pvals
+      construct_results_row = function(p.values.test,ref_select_method_Label){
+        rejected = which(p.adjust(p.values.test,method = CORRECTION_TYPE_SUBZERO) < Q_LEVEL) #pvals
+        true_positive = length(which(rejected %in% data$select_diff_abundant))
+        false_positive = length(rejected) - true_positive
+        ret = c(SCENARIO_ID,
+                ref_select_method_Label,
+                length(rejected),
+                true_positive,
+                false_positive,
+                bad_select)
+        return(ret)
+      }
       
-      true_positive = length(which(rejected %in% data$select_diff_abundant))
-      false_positive = length(rejected) - true_positive
+      results[current_row,] = construct_results_row(res_wilcoxon$p.values.test.ratio ,
+                                                    paste0(PREFIX_DACOMP_WILCOXON,PREFIX_DACOMP_rarefaction,ref_select_method_Label)
+                                                    ); current_row = current_row + 1
       
+      results[current_row,] = construct_results_row(res_wilcoxon$p.values.test.ratio.normalization ,
+                                                    paste0(PREFIX_DACOMP_WILCOXON,PREFIX_DACOMP_division,ref_select_method_Label)
+                                                    ); current_row = current_row + 1
       
+      results[current_row,] = construct_results_row(res_welch$p.values.test.ratio ,
+                                                    paste0(PREFIX_DACOMP_WELCH,PREFIX_DACOMP_rarefaction,ref_select_method_Label)
+                                                    ); current_row = current_row + 1
       
-      results[current_row,] = c(SCENARIO_ID,ref_select_method_Label,length(rejected),true_positive,
-                                false_positive, bad_select) ; current_row = current_row + 1
+      results[current_row,] = construct_results_row(res_welch$p.values.test.ratio.normalization ,
+                                                    paste0(PREFIX_DACOMP_WELCH,PREFIX_DACOMP_division,ref_select_method_Label)
+                                                    ); current_row = current_row + 1
+      
+      # results[current_row,] = c(SCENARIO_ID,ref_select_method_Label,length(rejected),true_positive,
+      #                           false_positive, bad_select) ; current_row = current_row + 1
+      # 
       
       res_HG = exactHyperGeometricTest(data$X,data$Y,Selected_References)
       rejected = which(p.adjust(res_HG,method = CORRECTION_TYPE_SUBZERO) < Q_LEVEL) #pvals
@@ -300,7 +317,53 @@ Worker_Function = function(core_nr){
       results[current_row,] = c(SCENARIO_ID,METHOD_LABEL_ANCOM,-1,-1,-1,-1) ; current_row = current_row + 1  
     }
     
-  }  
+    #ALDEx2 (note that we alter the data object here):
+    indicies_not_empty = which(apply(data$X>0,2,sum)>0)
+    m_original = ncol(data$X)
+    flags_H1 = rep(0,m_original)
+    flags_H1[data$select_diff_abundant] = 1
+    flags_H1 = flags_H1[indicies_not_empty]
+    data$X = data$X[,indicies_not_empty]
+    data$select_diff_abundant = which(flags_H1==1)
+    
+    aldex.res.iqlr <- aldex(t(data$X), as.character(data$Y), mc.samples=128, denom="iqlr",
+                            test="t", effect=FALSE,verbose = DEBUG.SINGLE.CORE)
+    
+    rejected.iqlr.wi = p.adjust(aldex.res.iqlr$wi.ep, method = CORRECTION_TYPE_SUBZERO) <= Q_LEVEL
+    rejected.iqlr.we = p.adjust(aldex.res.iqlr$we.ep, method = CORRECTION_TYPE_SUBZERO) <= Q_LEVEL
+    
+    ALDEx2.Nr.Rejected.Wi = sum(rejected.iqlr.wi)
+    ALDEx2.Nr.Rejected.We = sum(rejected.iqlr.we)
+    ALDEx2.Nr.TP.Wi = sum(which(rejected.iqlr.wi) %in% data$select_diff_abundant)
+    ALDEx2.Nr.TP.We = sum(which(rejected.iqlr.we) %in% data$select_diff_abundant)
+    ALDEx2.Nr.FP.Wi = ALDEx2.Nr.Rejected.Wi - ALDEx2.Nr.TP.Wi
+    ALDEx2.Nr.FP.We = ALDEx2.Nr.Rejected.We - ALDEx2.Nr.TP.We
+    
+    results[current_row,] = c(SCENARIO_ID,METHOD_LABEL_ALDEx2_Wilcoxon, ALDEx2.Nr.Rejected.Wi, ALDEx2.Nr.TP.Wi ,ALDEx2.Nr.FP.Wi,0) ; current_row = current_row + 1
+    results[current_row,] = c(SCENARIO_ID,METHOD_LABEL_ALDEx2_Welch, ALDEx2.Nr.Rejected.We, ALDEx2.Nr.TP.We ,ALDEx2.Nr.FP.We,0) ; current_row = current_row + 1
+    
+    #Wrench - note that we removed otus with zeroes before
+    W <- wrench( t(data$X), condition=data$Y  )
+    compositionalFactors <- W$ccf
+    normalizationFactors <- W$nf
+    
+    library(DESeq2)
+    deseq.obj <- DESeq2::DESeqDataSetFromMatrix(countData = t(data$X),
+                                                DataFrame(Y = factor(data$Y)),
+                                                ~ Y )
+    sizeFactors(deseq.obj) <- normalizationFactors
+    deseq2_res = DESeq2::DESeq(deseq.obj)
+    deseq2_res2 = results(deseq2_res)
+    
+    
+    wrench_rejected = which(p.adjust(deseq2_res2$pvalue,method = CORRECTION_TYPE_SUBZERO) <= Q_LEVEL)
+    wrench_nr_rejected = length(wrench_rejected)
+    wrench_nr_tp = sum(wrench_rejected%in% data$select_diff_abundant)
+    wrench_nr_fp = wrench_nr_rejected - wrench_nr_tp
+    results[current_row,] = c(SCENARIO_ID,METHOD_LABEL_Wrench, wrench_nr_rejected, wrench_nr_tp ,wrench_nr_fp,0) ;
+    current_row = current_row + 1
+    
+  }# end of reps per worker  
   return_object = list()
   return_object$results = results
 
@@ -347,6 +410,10 @@ if(MODE_RUN_SIMULATION){
   filename = REFSIM_results_file(RESULTS_DIR,SCENARIO_ID)
   save(res,file = filename)
 }
+
+sink(file = REFSIM_warnings_file(RESULTS_DIR,SCENARIO_ID))
+warnings()
+sink()
 
 if(MODE_PROCESS_RESULTS){
   cat(paste0('Combining results for scenario ',SCENARIO_ID,' \n\r'))
