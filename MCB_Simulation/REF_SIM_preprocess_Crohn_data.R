@@ -73,63 +73,20 @@ Average_Cell_Count = c(99183906832,
                        132689255189,
                        98343121358)
   
-  
-  # c(197157541176,
-  #                      218210059172,
-  #                      125989847716,
-  #                      NA,
-  #                      126954277286,
-  #                      117976608187,
-  #                      293227315248,
-  #                      210844305313,
-  #                      75171752063,
-  #                      152423729549,
-  #                      157516564417,
-  #                      221170483461,
-  #                      272395113930,
-  #                      141954022989,
-  #                      185975975976,
-  #                      74449786325,
-  #                      55680000000,
-  #                      273046796256,
-  #                      118890855457,
-  #                      184777251185,
-  #                      216236263736,
-  #                      161942278211,
-  #                      227270498084,
-  #                      118910256410,
-  #                      304091615542,
-  #                      214145922747,
-  #                      125267489712,
-  #                      185306772908,
-  #                      94427892235,
-  #                      241851598564,
-  #                      188343589744,
-  #                      80938406965,
-  #                      217328755926,
-  #                      89108527132,
-  #                      147651226158,
-  #                      100848484848,
-  #                      263032855436,
-  #                      273221957041,
-  #                      37247377846,
-  #                      81939437635)
 
 otu_table = t(otu_table)
 reordering_permutation = order(rownames(otu_table))
 otu_table = otu_table[reordering_permutation,]
 rownames(otu_table) #it is now ordered
 
-X = otu_table#otu_table[-4,]
-Average_Cell_Count = Average_Cell_Count#[-4]
+X = otu_table
+Average_Cell_Count = Average_Cell_Count
 
 prevalence_matrix = 1*(X>0)
 total_counts_in_taxa = as.numeric(apply(prevalence_matrix,2,sum))
 threshold = 4
 to_keep = which(total_counts_in_taxa >= threshold) 
 X2 = X[,to_keep]
-#apply(X2,1,sum)
-#min(apply(X2,1,sum))
 
 qPCR_data = list()
 qPCR_data$counts_matrix = X2

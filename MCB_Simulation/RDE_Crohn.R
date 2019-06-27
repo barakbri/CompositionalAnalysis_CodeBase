@@ -106,7 +106,7 @@ Average_Cell_Count = c(5314887324,
 Y = rep(0,95)
 Y[1:29] = 1
 
-boxplot(Average_Cell_Count[Y==1],Average_Cell_Count[Y==0],names = c('Sick','Healthy'),main='Boxplot for qPCR counts in Healthy/Sick')
+boxplot(Average_Cell_Count[Y==1],Average_Cell_Count[Y==0],names = c('Sick','Healthy'),main='Boxplot for cell counts in Healthy/Sick')
 mean(Average_Cell_Count[Y==0])/(mean(Average_Cell_Count[Y==1]))
 #2.508608
 median(Average_Cell_Count[Y==0])/(median(Average_Cell_Count[Y==1]))
@@ -145,8 +145,8 @@ Average_Cell_Count_matrix = matrix(Average_Cell_Count,ncol = 1)
 rownames(Average_Cell_Count_matrix) = rownames(X)
 X_corrected = rarefy_even_sampling_depth(X,Average_Cell_Count_matrix)
 
-#remove taxa in less than 4 people
-OTHER = 2 #4
+#remove taxa in less than X people
+OTHER = 2
 to_remove = which(as.numeric(apply(prevalence_matrix, 2, sum))<OTHER)
 X = X[,-to_remove]
 X_corrected = X_corrected[,-to_remove]
@@ -162,7 +162,7 @@ hist(res_Wilcoxon_corrected$p.values)
 total_counts_in_taxa = as.numeric(apply(prevalence_matrix,2,sum))
 
 disc_Wilcoxon_corrected = which(p.adjust(res_Wilcoxon_corrected$p.values,method = 'BH')<=Q_LEVEL)
-length(disc_Wilcoxon_corrected) #211 
+length(disc_Wilcoxon_corrected) 
 
 
 
@@ -185,11 +185,12 @@ intersect_with_ANCOM = function(ANCOM_res,subzero_rejections){
 }
 
 #SAVE POINT
-#load("E:/MCB2/Results/gut_V2_savepoint.RData")
 
-#Checking subzero/thac0
+
+set.seed(1)
 library(subzero)
-median_SD_thres_Vec = seq(0.8, 1.8, 0.1) #seq(1.0,1.4,0.05)
+library(dacomp)
+median_SD_thres_Vec = seq(0.8, 1.5, 0.1) 
 lambda_multiplier_Vec = c(1.0)
 PS_value = 1
 parameter_matrix = expand.grid(lambda_multiplier_Vec = lambda_multiplier_Vec ,
@@ -199,11 +200,14 @@ current_selected_ref_obj = NULL
 last_computed_thres = NULL
 ref_list = list()
 res_Wilcoxon_list = list()
+res_Welch_list = list()
 set.seed(1)
 
 filepath_i = function(i){return(paste0('../../Results/Gut_temp_v2_file_',i,'.RData'))}
 
-for(i in 1:nrow(parameter_matrix)){
+memory.limit(25000) # scale memory
+
+for(i in c(8)){ #1:nrow(parameter_matrix)
   set.seed(1) # for reproducability of permutations
   current_thres = parameter_matrix$median_SD_thres_Vec[i]
   current_multiplier = parameter_matrix$lambda_multiplier_Vec[i]
@@ -215,66 +219,52 @@ for(i in 1:nrow(parameter_matrix)){
   
   if(NEED_TO_SELECT){
     print(paste0('Selecting references , thres = ',current_thres))
-    current_selected_ref_obj = select.references.Median.SD.Threshold(X,median_SD_threshold = current_thres,maximal_TA = 200,Psuedo_Count_used = PS_value,  verbose = F,factor_by_Median_Score = F)
+    current_selected_ref_obj = dacomp.select_references(X = X,median_SD_threshold = current_thres,maximal_TA = 200,Pseudo_Count_used = PS_value,  verbose = F)
     last_computed_thres = current_thres
   }
   ref_list[[i]] =   current_selected_ref_obj
   
   
   print(paste0('Running subzero , mult = ',current_multiplier))
-  res_perm_Wilcoxon = subzero::subzero.dfdr.test(X = X,y = Y,
-                                                 nr_reference_taxa = current_selected_ref_obj$selected_references,verbose = F,q = Q_LEVEL,
+  res_perm_Wilcoxon = dacomp.test(X = X,y = Y,ind_reference_taxa = current_selected_ref_obj$selected_references,
+                                  verbose = F,
+                                  q = Q_LEVEL,
+                                  compute_ratio_normalization = T,
+                                  test = DACOMP.TEST.NAME.WILCOXON,
                                                  nr_perm = NR.PERMS)
+  
+  res_perm_Welch= dacomp.test(X = X,y = Y,ind_reference_taxa = current_selected_ref_obj$selected_references,
+                                  verbose = F,
+                                  q = Q_LEVEL,
+                                  compute_ratio_normalization = T,
+                                  test = DACOMP.TEST.NAME.WELCH_LOGSCALE,
+                                  nr_perm = NR.PERMS)
+  
   res_Wilcoxon_list[[i]] = res_perm_Wilcoxon
+  res_Welch_list[[i]] = res_perm_Welch
   temp_obj = list(current_selected_ref_obj = current_selected_ref_obj,
-                  res_perm_Wilcoxon = res_perm_Wilcoxon)
+                  res_perm_Wilcoxon = res_perm_Wilcoxon,
+                  res_perm_Welch = res_perm_Welch)
   current_temp_filepath_i = filepath_i(i)
   save(temp_obj,file = current_temp_filepath_i)
 }
 
+
+set.seed(1)
 #load
 ref_list = list()
 res_Wilcoxon_list = list()
+res_Welch_list = list()
 for(i in 1:nrow(parameter_matrix)){
   print(paste0('Loading case ',i))
   load(filepath_i(i))
   ref_list[[i]] = temp_obj$current_selected_ref_obj
   res_Wilcoxon_list[[i]] = temp_obj$res_perm_Wilcoxon
+  res_Welch_list[[i]] = temp_obj$res_perm_Welch
 }
-
-#Combine to get results
-res_matrix = parameter_matrix
-res_matrix = as.data.frame(res_matrix)
-res_matrix$nr_rejected = rep(NA,nrow(res_matrix))
-res_matrix$nr_rejected_dsfdr = rep(NA,nrow(res_matrix))
-res_matrix$median_lambda = rep(NA,nrow(res_matrix))
-res_matrix$mean_lambda = rep(NA,nrow(res_matrix))
-res_matrix$ANCOM_3_intersect = rep(NA,nrow(res_matrix))
-res_matrix$qPCR_intersect = rep(NA,nrow(res_matrix))
-res_matrix$ref_size = rep(NA,nrow(res_matrix))
-
-
-for(i in 1:nrow(res_matrix)){
-  res_matrix$nr_rejected[i] = length(which(p.adjust(res_Wilcoxon_list[[i]]$p.values.test,method = 'BH')<=Q_LEVEL))
-  res_matrix$nr_rejected_dsfdr[i] = length(res_Wilcoxon_list[[i]]$rejected)
-  res_matrix$median_lambda[i] = median(res_Wilcoxon_list[[i]]$min_value_array[-ref_list[[i]]$selected_references])
-  res_matrix$mean_lambda[i] = mean(res_Wilcoxon_list[[i]]$min_value_array[-ref_list[[i]]$selected_references])
-  
-  subzero_rejections = which(p.adjust(res_Wilcoxon_list[[i]]$p.values.test,method = 'BH')<=Q_LEVEL)
-  disc_ANCOM_3 =which(colnames(ANCOM_otu_dat) %in% ANCOM_default_res$detected)
-  res_matrix$ANCOM_3_intersect[i] = sum(subzero_rejections %in% disc_ANCOM_3)
-  res_matrix$qPCR_intersect[i] = sum(subzero_rejections %in% disc_Wilcoxon_corrected)
-  res_matrix$ref_size[i] = length(ref_list[[i]]$selected_references) 
-}
-
-
-write.csv(res_matrix,file = '../../Results/Gut_Data_Results.csv',row.names =F)
-#View(res_matrix)
 
 
 length(ANCOM_default_res$detected)
-#length(ANCOM_multcorr_2_res$detected)
-#length(ANCOM_multcorr_1_res$detected)
 length(disc_Wilcoxon_corrected)
 
 X_CSS = t(metagenomeSeq::cumNormMat(t(X)))
@@ -287,20 +277,95 @@ sum(disc_Wilcoxon_Paulson %in% disc_Wilcoxon_corrected)
 
 res_Wilcoxon_Percent = wilcoxon_taxa_wise(X_corrected,y = Y,normalize = T,normalize.P = 1,nr.perms = NR.PERMS)
 hist(res_Wilcoxon_Percent$p.values)
-
-
 disc_Wilcoxon_percent = which(p.adjust(res_Wilcoxon_Percent$p.values,method = 'BH')<=Q_LEVEL)
-length(disc_Wilcoxon_percent) #211 
+length(disc_Wilcoxon_percent) 
+
+# check we have no zeros so aldex 2
+if(any(as.numeric(apply((X > 0),2,sum))==0)){
+  stop('zeros in some columns, cannot run aldex 2!')
+}
+  
+
+library(ALDEx2)
+aldex.res.iqlr <- aldex(t(X), as.character(Y), mc.samples=128, denom="iqlr",
+                        test="t", effect=FALSE,verbose = T)
+aldex.res.zero <- aldex(t(X), as.character(Y), mc.samples=128, denom="zero",
+                        test="t", effect=FALSE,verbose = T)
+
+library(Wrench)
+W <- wrench( t(X), condition=Y  )
+compositionalFactors <- W$ccf
+normalizationFactors <- W$nf
+
+library(DESeq2)
+deseq.obj <- DESeq2::DESeqDataSetFromMatrix(countData = t(X),
+                                            DataFrame(Y = factor(Y)),
+                                            ~ Y )
+sizeFactors(deseq.obj) <- normalizationFactors
+deseq2_res = DESeq2::DESeq(deseq.obj)
+deseq2_res2 = results(deseq2_res)
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# Combine results
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+#Combine to get results
+res_matrix = parameter_matrix
+res_matrix = as.data.frame(res_matrix)
+res_matrix$nr_rejected_W = rep(NA,nrow(res_matrix))
+res_matrix$nr_rejected_W_dsfdr = rep(NA,nrow(res_matrix))
+res_matrix$nr_rejected_W_ratio = rep(NA,nrow(res_matrix))
+res_matrix$nr_rejected_t = rep(NA,nrow(res_matrix))
+res_matrix$nr_rejected_t_ratio = rep(NA,nrow(res_matrix))
+res_matrix$median_lambda = rep(NA,nrow(res_matrix))
+res_matrix$mean_lambda = rep(NA,nrow(res_matrix))
+res_matrix$ANCOM_3_intersect = rep(NA,nrow(res_matrix))
+res_matrix$cell_intersect = rep(NA,nrow(res_matrix))
+res_matrix$Wrench_intersect = rep(NA,nrow(res_matrix))
+res_matrix$ALDEx2_W_intersect = rep(NA,nrow(res_matrix))
+res_matrix$ALDEx2_t_intersect = rep(NA,nrow(res_matrix))
+res_matrix$ref_size = rep(NA,nrow(res_matrix))
+
+
+for(i in 1:nrow(res_matrix)){
+  res_matrix$nr_rejected_W[i] = length(which(p.adjust(res_Wilcoxon_list[[i]]$p.values.test,method = 'BH')<=Q_LEVEL))
+  res_matrix$nr_rejected_W_dsfdr[i] = length(res_Wilcoxon_list[[i]]$dsfdr_rejectedrejected)
+  res_matrix$median_lambda[i] = median(res_Wilcoxon_list[[i]]$lambda,na.rm = T)
+  res_matrix$mean_lambda[i] = mean(res_Wilcoxon_list[[i]]$lambda,na.rm = T)
+  res_matrix$nr_rejected_W_ratio[i] = length(which(p.adjust(res_Wilcoxon_list[[i]]$p.values.test.ratio.normalization,method = 'BH')<=Q_LEVEL))
+
+  res_matrix$nr_rejected_t[i] = length(which(p.adjust(res_Welch_list[[i]]$p.values.test ,method = 'BH')<=Q_LEVEL))
+  res_matrix$nr_rejected_t_ratio[i] = length(which(p.adjust(res_Welch_list[[i]]$p.values.test.ratio.normalization,method = 'BH')<=Q_LEVEL))  
+  
+  WCOMP_rejections = which(p.adjust(res_Wilcoxon_list[[i]]$p.values.test,method = 'BH')<=Q_LEVEL)
+  disc_ANCOM_3 =which(colnames(ANCOM_otu_dat) %in% ANCOM_default_res$detected)
+  res_matrix$ANCOM_3_intersect[i] = sum(WCOMP_rejections %in% disc_ANCOM_3)
+  res_matrix$cell_intersect[i] = sum(WCOMP_rejections %in% disc_Wilcoxon_corrected)
+  res_matrix$ref_size[i] = length(ref_list[[i]]$selected_references) 
+  
+  res_matrix$Wrench_intersect[i] = sum(WCOMP_rejections%in% which(deseq2_res2$padj<=Q_LEVEL))
+  res_matrix$ALDEx2_W_intersect[i] = sum(WCOMP_rejections%in% which(aldex.res.iqlr$wi.eBH<=Q_LEVEL))
+  res_matrix$ALDEx2_t_intersect[i] = sum(WCOMP_rejections%in% which(aldex.res.iqlr$we.eBH<=Q_LEVEL))
+}
+
+
+write.csv(res_matrix,file = '../../Results/Gut_Data_Results.csv',row.names =F)
+
+
+
 
 disc_list = list(
 disc_vec_ANCOM = which(colnames(ANCOM_otu_dat)%in% ANCOM_default_res$detected),
 disc_Wilcoxon_corrected = disc_Wilcoxon_corrected ,
 disc_Wilcoxon_Paulson = disc_Wilcoxon_Paulson,
 disc_Wilcoxon_percent = disc_Wilcoxon_percent,
-RAR = which(p.adjust(res_Wilcoxon_list[[which(median_SD_thres_Vec == 1.3)]]$p.values.test,method = 'BH')<=Q_LEVEL)
+disc_W_COMP = which(p.adjust(res_Wilcoxon_list[[which(median_SD_thres_Vec == 1.3)]]$p.values.test,method = 'BH')<=Q_LEVEL),
+disc_ALDEx2_iqlr_Wi = which(aldex.res.iqlr$wi.eBH <= Q_LEVEL),
+disc_ALDEx2_iqlr_We = which(aldex.res.iqlr$we.eBH <= Q_LEVEL),
+disc_Wrench = which(deseq2_res2$padj <= Q_LEVEL)
 )
 
-method_names = c('ANCOM','WIL-FLOW','WIL-CSS','WIL-TSS','W-COMP')
+method_names = c('ANCOM','WIL-FLOW','WIL-CSS','WIL-TSS','W-COMP','ALDEx2-W','ALDEx2-t','Wrench')
 shared_disc_mat = matrix(NA,nrow = length(method_names),ncol = length(method_names))
 rownames(shared_disc_mat) = method_names
 colnames(shared_disc_mat) = method_names
@@ -310,7 +375,7 @@ for(i in 1:length(method_names)){
   }
 }
 
-write.csv(shared_disc_mat,file = '../../Results/gut_qPCR_shared_disc_mat.csv')
+write.csv(shared_disc_mat,file = '../../Results/gut_cell_shared_disc_mat.csv')
 
 
 #Plot, compare large taxa
@@ -319,113 +384,73 @@ ind_to_prevalent = which(apply(X,2,mean)>=10)
 
 
 disc_list_plot = disc_list
-names(disc_list_plot) = c('ANCOM','W-FLOW','W-CSS','W-TSS','W-COMP')
+names(disc_list_plot) = c('ANCOM','W-FLOW','W-CSS','W-TSS','W-COMP','ALDEx2-W','ALDEx2-t','Wrench')
 disc_list_plot_prevalent = disc_list_plot
 disc_list_plot_rare = disc_list_plot
-
-
 
 for(i in 1:length(disc_list_plot_prevalent)){
   disc_list_plot_prevalent[[i]] = intersect(disc_list_plot_prevalent[[i]],ind_to_prevalent) 
   disc_list_plot_rare[[i]] = setdiff(disc_list_plot_rare[[i]],ind_to_prevalent)
 }
 
+temp = disc_list_plot[1:3]
+
 library(gplots)
-venn(disc_list_plot)
+pdf(file = '../../Results/Only_Compositional.pdf',height = 6,width = 7)
+par(mfrow=c(1,1))
+venn(disc_list_plot[-c(2,3,4)])
+par(mfrow=c(1,1))
+dev.off()
 
 
 pdf(file = '../../Results/Crohn_shared.pdf',height = 6,width = 14)
 par(mfrow=c(1,2))
-venn(disc_list_plot_prevalent)
-venn(disc_list_plot_rare)
+venn(disc_list_plot_prevalent[c(1,2,3,4,5)])
+venn(disc_list_plot_rare[c(1,2,3,4,5)])
 par(mfrow=c(1,1))
 dev.off()
 
-pdf(file = '../../Results/Crohn_shared_prevalent.pdf',height = 6,width = 7)
-venn(disc_list_plot_prevalent)
+pdf(file = '../../Results/One_From_Each_FrameWork.pdf',height = 6,width = 7)
+par(mfrow=c(1,1))
+venn(disc_list_plot[-c(3,4,7)])
+par(mfrow=c(1,1))
 dev.off()
 
-pdf(file = '../../Results/Crohn_shared_rare.pdf',height = 6,width = 7)
-venn(disc_list_plot_rare)
+is_rejected = matrix(0, nrow = length(names(disc_list_plot)), ncol= ncol(X))
+colnames(is_rejected) = 1:ncol(X)
+rownames(is_rejected) = names(disc_list_plot)
+
+for(i in 1:nrow(is_rejected)){
+  is_rejected[i,disc_list_plot[[i]]] = 1  
+}
+
+is_rejected = is_rejected[,(which(apply(is_rejected,2,sum)>0))]
+ord = order(apply(is_rejected,2,sum),decreasing = T)
+is_rejected = is_rejected[,ord]
+
+dim(is_rejected)
+#image(t(is_rejected))
+
+library(reshape2)
+melted_is_rejected = melt(data.frame(Method=rownames(is_rejected), is_rejected), id.vars="Method")
+
+
+library(yarrr)
+pallete = yarrr::piratepal("basel",
+                 plot.result = FALSE,
+                 trans = 0)[-c(8)]          # Slightly transparent
+
+op <- par(bg = "#f4f5f7")
+
+pdf(file = '../../Results/Shared_Plot.pdf',height = 6,width = 7)
+plot(c(-80, ncol(is_rejected)), c(0, 8), type = "n", xlab = "", ylab = "",
+     main = "")
+reorder_vec = c(3,1,4,2,5,6,7,8)
+for(i in 1:8){
+  p = which(is_rejected[reorder_vec[i],]==1)
+  rect(xleft = p-1,xright = p,ybottom = i-1,ytop = i,col = pallete[i],border = NA)  #rainbow(n=8)
+  text(x=-50,y= i-0.5,labels = names(disc_list_plot)[reorder_vec[i]])
+}
 dev.off()
-
-
-#intersection of all subzero rejections:
-
-rej_list = list()
-for(i in 5:7){
-  rej_list[[i]]  = which(p.adjust(res_Wilcoxon_list[[i]]$p.values.test,method = 'BH')<=Q_LEVEL)
-  
-}
-inter_set = rej_list[[5]]
-for(i in 5:7){
-  inter_set = intersect(inter_set,rej_list[[i]])  
-}
-length(inter_set) #82
-
-
-#Check reference validity
-set.seed(1)
-ref_indices = ref_list[[1]]$selected_references
-X_ref = X[,ref_indices]
-#image(t(log10(X_ref+1)))
-library(wcomp)
-ref_check = wcomp::wcomp.check_reference_set_is_valid.k_groups(matrix(as.integer(X_ref),nrow = nrow(X_ref),ncol = ncol(X_ref)),Y,nr.perm = 1000,verbose = T)
-ref_check
-
-
-#ALDEx2
-sort(as.numeric(apply((X > 0),2,sum)))# check we have no zeros so aldex 2
-
-set.seed(1)
-aldex.res.iqlr <- aldex(t(X), as.character(Y), mc.samples=1, denom="iqlr",
-                        test="t", effect=FALSE)
-aldex.res.zero <- aldex(t(X), as.character(Y), mc.samples=1, denom="zero",
-                        test="t", effect=FALSE)
-
-hist(aldex.res.iqlr$wi.ep)
-hist(aldex.res.iqlr$we.ep)
-hist(aldex.res.zero$wi.ep)
-hist(aldex.res.zero$we.ep)
-
-rejected.iqlr.wi = p.adjust(aldex.res.iqlr$wi.ep,method = 'BH')<=0.1
-rejected.iqlr.we = p.adjust(aldex.res.iqlr$we.ep,method = 'BH')<=0.1
-rejected.zero.wi = p.adjust(aldex.res.zero$wi.ep,method = 'BH')<=0.1
-rejected.zero.we = p.adjust(aldex.res.zero$we.ep,method = 'BH')<=0.1
-
-sum(rejected.iqlr.wi)
-sum(rejected.iqlr.we)
-sum(rejected.zero.wi)
-sum(rejected.zero.we)
-
-length(rej_list[[6]])
-length(which(which(rejected.iqlr.wi) %in% rej_list[[6]]))
-length(which(which(rejected.iqlr.we) %in% rej_list[[6]]))
-length(which(which(rejected.zero.wi) %in% rej_list[[6]]))
-length(which(which(rejected.zero.we) %in% rej_list[[6]]))
-
-
-
-### new shared disc matrix
-disc_list = list(
-  disc_vec_ANCOM = which(colnames(ANCOM_otu_dat)%in% ANCOM_default_res$detected),
-  disc_Wilcoxon_corrected = disc_Wilcoxon_corrected ,
-  disc_Wilcoxon_Paulson = disc_Wilcoxon_Paulson,
-  disc_Wilcoxon_percent = disc_Wilcoxon_percent,
-  RAR = which(p.adjust(res_Wilcoxon_list[[which(median_SD_thres_Vec == 1.3)]]$p.values.test,method = 'BH')<=Q_LEVEL),
-  ALDEx2 = which(rejected.iqlr.wi)
-)
-
-method_names = c('ANCOM','WIL-FLOW','WIL-CSS','WIL-TSS','W-COMP','ALDEx2')
-shared_disc_mat = matrix(NA,nrow = length(method_names),ncol = length(method_names))
-rownames(shared_disc_mat) = method_names
-colnames(shared_disc_mat) = method_names
-for(i in 1:length(method_names)){
-  for(j in i:length(method_names)){
-    shared_disc_mat[i,j] = sum(disc_list[[i]] %in% disc_list[[j]])
-  }
-}
-
-write.csv(shared_disc_mat,file = '../../Results/gut_qPCR_shared_disc_mat_with_ALDEx2.csv')
 
 

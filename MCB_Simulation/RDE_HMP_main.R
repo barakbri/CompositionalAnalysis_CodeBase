@@ -32,8 +32,8 @@ region = c(1,rep(2,9),rep(3,5),rep(4,3))
 
 MODE_RUN = T
 MODE_ANALYZE = T
-START_FROM = 1
-START_FROM_SITE_2 = 2
+START_FROM = 3
+START_FROM_SITE_2 = 6
 DATA_LOADED = F
 
 
@@ -92,7 +92,16 @@ if(MODE_ANALYZE){
                               rejections = rep(NA,nr_rows_in_results),
                               shared = rep(NA,nr_rows_in_results),
                               median_lambda = rep(NA,nr_rows_in_results),
-                              subset_disc = rep(NA,nr_rows_in_results)
+                              subset_disc = rep(NA,nr_rows_in_results),
+                              rejections_division = rep(NA,nr_rows_in_results),
+                              rejections_Welch = rep(NA,nr_rows_in_results),
+                              rejections_division_Welch = rep(NA,nr_rows_in_results),
+                              ALDEx2_Wilcoxon = rep(NA,nr_rows_in_results),
+                              ALDEx2_Welch = rep(NA,nr_rows_in_results),
+                              Wrench = rep(NA,nr_rows_in_results),
+                              shared_ALDEx2_Wilcoxon = rep(NA,nr_rows_in_results),
+                              shared_ALDEx2_Welch = rep(NA,nr_rows_in_results),
+                              shared_Wrench = rep(NA,nr_rows_in_results)
                               )
   
   for(site1 in 1:(length(Valid_Body_Sites)-1)){
@@ -132,6 +141,14 @@ if(MODE_ANALYZE){
         same_region = 1
      
       
+      length(results_to_save$rejected_by_pval)
+      length(results_to_save$rejected_by_pval_division)
+      length(results_to_save$rejected_by_pval_Welch)
+      length(results_to_save$rejected_by_pval_division_Welch)
+      length(results_to_save$rejected.iqlr.wi)
+      length(results_to_save$rejected.iqlr.we)
+      length(results_to_save$wrench_rejected)
+      
       row_to_insert = c(same_region,(Y0),(Y1),
                         results_to_save$`dim(X)`[1],results_to_save$`dim(X_2)`[2],
                         nr_Wilcoxon_rejections,
@@ -141,13 +158,21 @@ if(MODE_ANALYZE){
                         ref_size_selected,
                         nr_vanilla_shared+nr_vanilla_unique, nr_vanilla_shared,
                         median_lambda,
-                        results_to_save$nr_rejections_subset
+                        results_to_save$nr_rejections_subset,
+                        length(results_to_save$rejected_by_pval_division),
+                        length(results_to_save$rejected_by_pval_Welch),
+                        length(results_to_save$rejected_by_pval_division_Welch),
+                        length(results_to_save$rejected.iqlr.wi),
+                        length(results_to_save$rejected.iqlr.we),
+                        length(results_to_save$wrench_rejected),
+                        length(which(results_to_save$rejected.iqlr.wi %in% results_to_save$rejected_by_pval)),
+                        length(which(results_to_save$rejected.iqlr.we %in% results_to_save$rejected_by_pval)),
+                        length(which(results_to_save$wrench_rejected %in% results_to_save$rejected_by_pval))
                         )
       
       print(paste0('Inserting row ',row_pointer,' with length : ',length(row_to_insert)))
       dt_results[row_pointer,] = row_to_insert
       row_pointer = row_pointer + 1
-      
     }
   }
   

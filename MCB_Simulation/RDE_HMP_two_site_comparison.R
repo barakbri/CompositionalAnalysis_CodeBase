@@ -42,7 +42,7 @@ MIN_TA = 10
 MAX_TA = 200
 ADJUSTMENT = 0
 MIN_PREV = 0.00
-MED_SD_THRES = 1.6
+MED_SD_THRES = 1.3
 
 NORMAL_APPROX = T
 NR_PERMUTATIONS = 30000
@@ -78,7 +78,7 @@ if(VERBOSE_MSGS){
 
 source('ReferenceScore_Plot.R')
 
-library(subzero)
+library(dacomp)
 library(ancom.R)
 library(Matrix)
 set.seed(1)
@@ -206,14 +206,7 @@ results_to_save$taxa_sums = taxa_sums
 results_to_save$empty_taxa = which(taxa_sums == 0)
 
 
-# selected_references_obj_for_plot = select.references.by.pair.ratios.and.abundance(X = X_2,
-#                                                                          target_abundance =  c(2,5,10,20,50),
-#                                                                          adjustment = ADJUSTMENT,
-#                                                                          MIN_PREV = MIN_PREV,verbose = F)
-
-
-selected_references_obj = select.references.Median.SD.Threshold(X = X_2,median_SD_threshold = MED_SD_THRES,minimal_TA = MIN_TA,
-                                                                maximal_TA = MAX_TA,select_from = 1:(ncol(X_2)),verbose = F,Psuedo_Count_used = 1,factor_by_Median_Score = F)
+selected_references_obj = dacomp::dacomp.select_references(X = X_2,median_SD_threshold = MED_SD_THRES,minimal_TA = MIN_TA,maximal_TA = MAX_TA,select_from = 1:(ncol(X_2)),verbose = F,Pseudo_Count_used  = 1)
 
 ref_analysis_save_file = paste0(HMP_RESULTS_DIR,"Ref_selection_analysis_",(Y0),"_",Y1,'.pdf')
 pdf(file = ref_analysis_save_file,width = 8,height = 5)
@@ -242,18 +235,27 @@ if(!is.null(selected_references) & length(selected_references) <= dim(X_2)[2] - 
   set.seed(1)
   flag = T
   if(VERBOSE_MSGS)
-    print(paste0('Computing DS-FDR'))
+    print(paste0('Computing dacomp'))
+  res_dsfdr = dacomp::dacomp.test(X = X_2, y = Y, test = DACOMP.TEST.NAME.WILCOXON, ind_reference_taxa = as.numeric(selected_references), nr_perm = 30000, q = Q, compute_ratio_normalization = T)
+  res_dsfdr_Welch = dacomp::dacomp.test(X = X_2, y = Y, test = DACOMP.TEST.NAME.WELCH_LOGSCALE, ind_reference_taxa = as.numeric(selected_references), nr_perm = 30000, q = Q, compute_ratio_normalization = T)
   
-  res_dsfdr = subzero.dfdr.test(X = X_2,Y,as.numeric(selected_references),
-                                nr_perm = 30000,verbose = F,q = Q) #ceiling(1/(Q/(dim(X_2)[2])))
+  
   results_to_save$res_dsfdr = res_dsfdr
+  results_to_save$res_dsfdr_Welch = res_dsfdr_Welch
   
   rejected = res_dsfdr$rejected
-  rejected_by_pval = which(p.adjust(res_dsfdr$p.values.test,method = 'BH')<=Q)
+  rejected_by_pval = which(p.adjust(res_dsfdr$p.values.test,method = 'BH') <= Q)
+  rejected_by_pval_division = which(p.adjust(res_dsfdr$p.values.test.ratio.normalization,method = 'BH') <= Q)
+  
+  rejected_by_pval_Welch = which(p.adjust(res_dsfdr$p.values.test,method = 'BH') <= Q)
+  rejected_by_pval_division_Welch = which(p.adjust(res_dsfdr$p.values.test.ratio.normalization,method = 'BH') <= Q)
   
   results_to_save$rejected = rejected
   results_to_save$rejected_by_pval = rejected_by_pval
-  
+  results_to_save$rejected_by_pval_division = rejected_by_pval_division
+  results_to_save$rejected_by_pval_Welch = rejected_by_pval_Welch
+  results_to_save$rejected_by_pval_division_Welch = rejected_by_pval_division_Welch
+
 }
 
 
@@ -276,11 +278,11 @@ ANCOM_Detected = integer(0)
 if(!DISABLE_ANCOM){
   ANCOM_res = ANCOM(otu_dt, sig = Q, multcorr = 3)
   
-  # ANCOM_GRAPH_FILENAME = paste0(HMP_RESULTS_DIR,"",strsplit(Y0,'UBERON:')[[1]][2],"_",strsplit(Y1,'UBERON:')[[1]][2],"_ANCOM_GRAPH",'.png')
-  # png(filename = ANCOM_GRAPH_FILENAME)
-  # plot(ecdf(ANCOM_res$W),xlim = c(0,dim(X_ANCOM)[2]),ylim = c(0,1),main="ECDF of # of Wilcoxon Rejection")
-  # dev.off()
-  # 
+  ANCOM_GRAPH_FILENAME = paste0(HMP_RESULTS_DIR,"",strsplit(Y0,'UBERON:')[[1]][2],"_",strsplit(Y1,'UBERON:')[[1]][2],"_ANCOM_GRAPH",'.png')
+  png(filename = ANCOM_GRAPH_FILENAME)
+  plot(ecdf(ANCOM_res$W),xlim = c(0,dim(X_ANCOM)[2]),ylim = c(0,1),main="ECDF of # of Wilcoxon Rejection")
+  dev.off()
+
   ANCOM_Detected = which(paste0('X',colnames(otu_dt)) %in% ANCOM_res$detected)  
 }
 
@@ -422,10 +424,17 @@ selected_for_subset = sample(1:nrow(X_2),size = subset_size)
 X_2_subset = X_2[selected_for_subset,]
 Y_subset = Y[selected_for_subset]
 
-selected_references_obj_subset = select.references.Median.SD.Threshold(X = X_2_subset,median_SD_threshold = MED_SD_THRES,minimal_TA = MIN_TA,maximal_TA = MAX_TA,select_from = 1:(ncol(X_2_subset)-1))
+selected_references_obj_subset = dacomp.select_references(X = X_2_subset,median_SD_threshold = MED_SD_THRES,minimal_TA = MIN_TA,maximal_TA = MAX_TA,select_from = 1:(ncol(X_2_subset)))
 
-res_dsfdr_subset = subzero.dfdr.test(X = X_2_subset,Y_subset,as.numeric(selected_references_obj_subset$selected_references),q = Q,
-                              nr_perm = ceiling(1/(Q/(dim(X_2)[2]))),verbose = F)
+
+res_dsfdr_subset = dacomp.test(X = X_2_subset,
+                               y = Y_subset,
+                               ind_reference_taxa = as.numeric(selected_references_obj_subset$selected_references),
+                               test = DACOMP.TEST.NAME.WILCOXON,
+                               q = Q,
+                              nr_perm = max(ceiling(1/(Q/(dim(X_2)[2]))),1000),
+                              verbose = F)
+
 pvalues_subset = res_dsfdr_subset$p.values
 pvalues_subset[selected_references_obj_subset$selected_references] = NA
 nr_rejections_subset = length(which(p.adjust(pvalues_subset,method = 'BH')<=Q))
@@ -454,8 +463,52 @@ results_to_save$Nr_Wilcoxon_Rejections = length( which(p.adjust(Wilcoxon_res$p.v
 results_to_save$Nr_Wilcoxon_Normalize_Rejections = length( which(p.adjust(Wilcoxon_res_normalize$p.values,method = 'BH') <= Q) )
 results_to_save$Nr_Wilcoxon_Normalize_Rejections_CSS = length( which(p.adjust(Wilcoxon_res_normalize_CSS$p.values,method = 'BH') <= Q) )
 
+
 ####
-#Section VI: Save results
+#Section VI: ALDEx2 and Wrench
+##########################################################
+library(ALDEx2)
+
+#ALDEx2 
+X_2_copy = X_2
+indicies_not_empty = which(apply(X_2>0,2,sum)>0)
+m_original = ncol(X_2)
+original_ind = 1:m_original
+
+X_2_copy = X_2_copy[,indicies_not_empty]
+original_ind = original_ind[indicies_not_empty]
+
+aldex.res.iqlr <- aldex(t(X_2_copy), as.character(Y), mc.samples=128, denom="iqlr",
+                        test="t", effect=FALSE,verbose = T)
+
+rejected.iqlr.wi = original_ind[which(p.adjust(aldex.res.iqlr$wi.ep, method = 'BH') <= Q)]
+rejected.iqlr.we = original_ind[which(p.adjust(aldex.res.iqlr$we.ep, method = 'BH') <= Q)]
+
+results_to_save$rejected.iqlr.wi = rejected.iqlr.wi
+results_to_save$rejected.iqlr.we = rejected.iqlr.we
+
+library(Wrench)
+#Wrench - note that we removed otus with zeroes before
+W <- wrench( t(X_2_copy), condition=Y )
+compositionalFactors <- W$ccf
+normalizationFactors <- W$nf
+
+library(DESeq2)
+deseq.obj <- DESeq2::DESeqDataSetFromMatrix(countData = t(X_2_copy),
+                                            DataFrame(Y = factor(Y)),
+                                            ~ Y )
+sizeFactors(deseq.obj) <- normalizationFactors
+deseq2_res = DESeq2::DESeq(deseq.obj)
+deseq2_res2 = results(deseq2_res)
+
+
+wrench_rejected = which(p.adjust(deseq2_res2$pvalue,method = 'BH') <= Q)
+wrench_rejected = original_ind[wrench_rejected]
+
+results_to_save$wrench_rejected = wrench_rejected
+
+####
+#Section VII: Save results
 ##########################################################
 
 
@@ -465,12 +518,5 @@ save(results_to_save,file = results_save_file)
 
 if(VERBOSE_MSGS){
   cat(paste0('Done body sites ',Y0,' and ',Y1,'\n\r'))
-  # pvals = res_dsfdr$p.values
-  # pvals_test = pvals; pvals_test[selected_references] = NA
-  # pvals_ref = pvals; pvals_ref[-selected_references] = NA
-  # rej_lambda1 = length(results_to_save$res_dsfdr_lambda_1_0_rejected)
-  # nr_rej =length(which(p.adjust(pvals_test,method = 'BH')<=Q))
-  # nr_rej_ref =length(which(p.adjust(pvals_ref,method = 'BH')<=Q))
-  # cat(paste0('Rej: ',rej_lambda1 ,', Rej_sens:',nr_rej,' , Rej-ref',nr_rej_ref,'\n\r'))
 }
 

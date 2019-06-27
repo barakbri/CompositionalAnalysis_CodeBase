@@ -39,14 +39,7 @@ for(SCENARIO_ID in 1:25){
   
   if(DO_PLOTS){
     plot_ref_select_scores(ref_select = ref_select,
-                           label = "")#paste0('Case: ',SCENARIO_ID," : ",current_setting_generator$label)
-    # hist(ref_select$scores,breaks = 30,main = paste0('Case: ',SCENARIO_ID," : ",current_setting_generator$label))
-    # sorted_scores = sort(ref_select$scores)
-    # threshold_ind = 1
-    # for(threshold_ind in 1:length(Target_MinAbundance_values)){
-    #   abline(v = sorted_scores[ref_select$arg_obj[threshold_ind]],col = threshold_ind+1,lwd = 3)
-    #   text(x = sorted_scores[ref_select$arg_obj[threshold_ind]]+0.1,y=10,labels = Target_MinAbundance_values[threshold_ind],col = threshold_ind+1)
-    # }  
+                           label = "")
   }
   if(DO_PLOTS_TO_FILE)
     dev.off()
