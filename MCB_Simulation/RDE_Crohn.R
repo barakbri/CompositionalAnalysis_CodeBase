@@ -365,7 +365,7 @@ disc_ALDEx2_iqlr_We = which(aldex.res.iqlr$we.eBH <= Q_LEVEL),
 disc_Wrench = which(deseq2_res2$padj <= Q_LEVEL)
 )
 
-method_names = c('ANCOM','WIL-FLOW','WIL-CSS','WIL-TSS','W-COMP','ALDEx2-W','ALDEx2-t','Wrench')
+method_names = c('ANCOM','WIL-FLOW','WIL-CSS','WIL-TSS','DACOMP','ALDEx2-W','ALDEx2-t','Wrench')
 shared_disc_mat = matrix(NA,nrow = length(method_names),ncol = length(method_names))
 rownames(shared_disc_mat) = method_names
 colnames(shared_disc_mat) = method_names
@@ -384,7 +384,7 @@ ind_to_prevalent = which(apply(X,2,mean)>=10)
 
 
 disc_list_plot = disc_list
-names(disc_list_plot) = c('ANCOM','W-FLOW','W-CSS','W-TSS','W-COMP','ALDEx2-W','ALDEx2-t','Wrench')
+names(disc_list_plot) = c('ANCOM','W-FLOW','W-CSS','W-TSS','DACOMP','ALDEx2-W','ALDEx2-t','Wrench')
 disc_list_plot_prevalent = disc_list_plot
 disc_list_plot_rare = disc_list_plot
 
@@ -405,9 +405,17 @@ dev.off()
 
 pdf(file = '../../Results/Crohn_shared.pdf',height = 6,width = 14)
 par(mfrow=c(1,2))
-venn(disc_list_plot_prevalent[c(1,2,3,4,5)])
-venn(disc_list_plot_rare[c(1,2,3,4,5)])
+venn(disc_list_plot_prevalent[c(1,2,3,5,7)])
+venn(disc_list_plot_rare[c(1,2,3,5,7)])
 par(mfrow=c(1,1))
+dev.off()
+
+pdf(file = '../../Results/Crohn_shared_prevalent.pdf',height = 6,width = 7)
+venn(disc_list_plot_prevalent[c(1,2,3,5,7)])
+dev.off()
+
+pdf(file = '../../Results/Crohn_shared_rare.pdf',height = 6,width = 7)
+venn(disc_list_plot_rare[c(1,2,3,5,7)])
 dev.off()
 
 pdf(file = '../../Results/One_From_Each_FrameWork.pdf',height = 6,width = 7)

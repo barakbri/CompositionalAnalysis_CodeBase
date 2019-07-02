@@ -99,7 +99,7 @@ gg_color_hue <- function(n) {
 }
 
 
-new_col_names =  c('ÁLDEx2-t','ÁLDEx2-W','ANCOM','WCOMP-t-ratio','WCOMP-t-subsample','WCOMP-ratio','WCOMP-subsample','HG','W-CSS','W-TSS','W-FLOW','Wrench','m1','effect')
+new_col_names =  c('ALDEx2-t','ALDEx2-W','ANCOM','DACOMP-t-ratio','DACOMP-t-subsample','DACOMP-ratio','DACOMP-subsample','HG','W-CSS','W-TSS','W-FLOW','Wrench','m1','effect')
 new_col_names_no_flow = new_col_names[-c(11,13,14)]
 dt_FDR_Plot = dt_FDR
 
@@ -112,9 +112,13 @@ pallete = yarrr::piratepal("xmen",
                            plot.result = FALSE)#[c(1,2,3,4,10)]          
 pallete = substr(pallete,1,7)
 
+methods_main_body = c('ALDEx2-t','ANCOM','DACOMP-subsample','HG','W-CSS','W-FLOW')
+methods_appendix = c('ALDEx2-W','DACOMP-t-subsample','W-TSS','Wrench')
+methods_list = list(methods_main_body = methods_main_body, methods_appendix = methods_appendix)
+
 for(graph_id in c(1,2)){
   dt_FDR_Plot_melt = reshape2::melt(dt_FDR_Plot,id.vars = c('m1','effect'), value.name = 'FDR')
-  dt_FDR_Plot_melt = dt_FDR_Plot_melt[dt_FDR_Plot_melt$variable  %in% unique(dt_FDR_Plot_melt$variable)[1:5 + 5*(graph_id-1)],]
+  dt_FDR_Plot_melt = dt_FDR_Plot_melt[dt_FDR_Plot_melt$variable  %in% methods_list[[graph_id]],]
   dt_FDR_Plot_melt_GLOBAL_NULL_m1_10 = dt_FDR_Plot_melt[which(dt_FDR_Plot_melt$m1==0),]
   dt_FDR_Plot_melt_GLOBAL_NULL_m1_100 = dt_FDR_Plot_melt[which(dt_FDR_Plot_melt$m1==0),]
   dt_FDR_Plot_melt_GLOBAL_NULL_m1_10$m1 = 10
@@ -126,7 +130,7 @@ for(graph_id in c(1,2)){
   dt_FDR_Plot_melt$m1 = factor(dt_FDR_Plot_melt$m1,levels = c(10,100),labels = c('m1 = 10','m1 = 100'))
   p_1_FDR = ggplot(dt_FDR_Plot_melt,aes(x=Effect,y = FDR,color = Method))+geom_line(lwd = 0.75) + geom_point(size = 0.4) +
     facet_wrap(m1~.) + theme_bw()+geom_hline(yintercept = 0.1,color = 'black',lty = 1,alpha=0.2)+xlab(TeX("$\\lambda_{effect}$")) +
-    scale_color_manual(values=as.character(pallete[c(1,2,3,4,5)]))  #gg_color_hue(10)[1:10]
+    scale_color_manual(values=as.character(pallete[c(1,2,3,4,5,6)]))  #gg_color_hue(10)[1:10]
   ggsave(p_1_FDR,filename = paste0('../../Results/sim_p1_FDR',graph_id,'.pdf'),width = 7,height = 3)
 }
 
@@ -139,14 +143,14 @@ dt_TP_Plot = dt_TP_Plot[, !(colnames(dt_TP_Plot)%in% c('WCOMP-ratio','WCOMP-t-ra
 
 for(graph_id in c(1,2)){
   dt_TP_Plot_melt = reshape2::melt(dt_TP_Plot,id.vars = c('m1','effect'),value.name = 'TP')  
-  dt_TP_Plot_melt = dt_TP_Plot_melt[dt_TP_Plot_melt$variable  %in% unique(dt_TP_Plot_melt$variable)[1:5 + 5*(graph_id-1)],]
+  dt_TP_Plot_melt = dt_TP_Plot_melt[dt_TP_Plot_melt$variable   %in% methods_list[[graph_id]],]
   dt_TP_Plot_melt = dt_TP_Plot_melt[-which(dt_TP_Plot_melt$m1 == 0),]
   names(dt_TP_Plot_melt)[3] = 'Method'
   names(dt_TP_Plot_melt)[2] = 'Effect'
   dt_TP_Plot_melt$m1 = factor(dt_TP_Plot_melt$m1,levels = c(10,100),labels = c('m1 = 10','m1 = 100'))
   p_1_TP = ggplot(dt_TP_Plot_melt,aes(x=Effect,y = TP,color = Method))+geom_line(lwd = 0.75)+geom_point(size = 0.4)+
     facet_wrap(m1~.,scales = "free") + theme_bw() +xlab(TeX("$\\lambda_{effect}$"))+
-    scale_color_manual(values=as.character(pallete[c(1,2,3,4,5)]))
+    scale_color_manual(values=as.character(pallete[c(1,2,3,4,5,6)]))
   ggsave(p_1_TP,filename = paste0('../../Results/sim_p1_TP',graph_id,'.pdf'),width = 7,height = 3)
 }
 
@@ -194,20 +198,24 @@ for(i in 1:ncol(dt_tp)){
   dt_FDR[,i] = as.character(round(as.numeric(dt_FDR[,i]),2))
 }
 
-print_by_Xtable = function(dt_combined){
+print_by_Xtable = function(dt_combined,cols_to_remove){
   colnames(dt_combined) = new_col_names_no_flow
   dt_combined = dt_combined
   dt_combined = as.data.frame(dt_combined)
   dt_combined$m1 =c(rep(120,5),rep(60,5))
   dt_combined$p_high =rep(c(0.9,0.8,0.7,0.6,0.5),2)
-  print(xtable(dt_combined), include.rownames=FALSE)
+  print(xtable(dt_combined[,-cols_to_remove]), include.rownames=FALSE)
   return(dt_combined)
 }
 
+cols_remove_main = c(2,4,5,6,10,11)
+cols_remove_appendix = c(1,3,7,8,9)
 
-write.csv(print_by_Xtable(dt_tp),file = '../../Results/sim2_tp.csv')
-write.csv(print_by_Xtable(dt_FDR),file = '../../Results/sim2_FDR.csv')
 
+write.csv(print_by_Xtable(dt_FDR,cols_remove_main),file = '../../Results/sim2_FDR.csv')
+write.csv(print_by_Xtable(dt_FDR,cols_remove_appendix),file = '../../Results/sim2_FDR.csv')
+write.csv(print_by_Xtable(dt_tp,cols_remove_main),file = '../../Results/sim2_tp.csv')
+write.csv(print_by_Xtable(dt_tp,cols_remove_appendix),file = '../../Results/sim2_tp.csv')
 
 Compute_SE_for_Scenarios(12:21)
 Compute_SE_for_Scenarios(12:21,col = 'tp')
@@ -246,10 +254,12 @@ colnames(dt_FDR) = c('n',new_col_names_no_flow)
 
 
 write.csv(dt_FDR,row.names = F,file = '../../Results/sim3_FDR.csv')
-write.csv(dt_tp,row.names = F,file = '../../Results/sim3_TP.csv') # -9 = remove HG
+write.csv(dt_tp,row.names = F,file = '../../Results/sim3_TP.csv')
 
-print(xtable(dt_FDR), include.rownames=FALSE)
-print(xtable(dt_tp[,-c(9)]), include.rownames=FALSE) # -9 = remove HG
+print(xtable(dt_FDR[,-c(3,5,6,7,11,12)]), include.rownames=FALSE)#main body
+print(xtable(dt_FDR[,-c(2,4,8,9)]), include.rownames=FALSE)
+print(xtable(dt_tp[,-c(3,5,6,7,11,12,9)]), include.rownames=FALSE) # -9 = remove HG
+print(xtable(dt_tp[,-c(2,4,8,9)]), include.rownames=FALSE) # -9 = remove HG
 
 Compute_SE_for_Scenarios(22:25)
 Compute_SE_for_Scenarios(22:25,col = 'tp')

@@ -1,6 +1,6 @@
 library(xtable)
 
-dt = read.csv('../../Results/gut_qPCR_shared_disc_mat.csv')
+dt = read.csv('../../Results/gut_cell_shared_disc_mat.csv')
 xtable::xtable(dt)
 
 
@@ -19,7 +19,7 @@ Site2 = dt$Site2,
 NR.Taxa = dt$taxa_for_test,
 ANCOM = dt$ANCOM_rejections,
 DISC_Wilcoxon_CSS = dt$Nr_Wilcoxon_Rejections_Normalized_CSS,
-DISC_Wilcoxon_TSS = dt$Nr_Wilcoxon_Rejections_Normalized,
+DISC_ALDEx2t = dt$ALDEx2_Welch,
 Discoveries = dt$rejections,
 Shared = dt$shared,
 ReferenceSize = dt$ref_size_selected)
