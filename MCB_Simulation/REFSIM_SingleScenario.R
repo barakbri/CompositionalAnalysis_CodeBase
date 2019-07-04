@@ -1,5 +1,5 @@
 NR.WORKERS = 96 #63#72-1#63
-#SCENARIO_ID = 11
+SCENARIO_ID = 10
 MAINDIR = './'
 Q_LEVEL = 0.1
 
@@ -206,7 +206,7 @@ Worker_Function = function(core_nr){
       bad_select = length(which(ref_select$selected_references %in% data$select_diff_abundant))
       
       construct_results_row = function(p.values.test,ref_select_method_Label){
-        rejected = which(p.adjust(p.values.test,method = CORRECTION_TYPE_SUBZERO) < Q_LEVEL) #pvals
+        rejected = which(p.adjust(p.values.test,method = CORRECTION_TYPE_SUBZERO) <= Q_LEVEL) #pvals
         true_positive = length(which(rejected %in% data$select_diff_abundant))
         false_positive = length(rejected) - true_positive
         ret = c(SCENARIO_ID,
@@ -218,7 +218,7 @@ Worker_Function = function(core_nr){
         return(ret)
       }
       
-      results[current_row,] = construct_results_row(res_wilcoxon$p.values.test.ratio ,
+      results[current_row,] = construct_results_row(res_wilcoxon$p.values.test ,
                                                     paste0(PREFIX_DACOMP_WILCOXON,PREFIX_DACOMP_rarefaction,ref_select_method_Label)
                                                     ); current_row = current_row + 1
       
@@ -226,7 +226,7 @@ Worker_Function = function(core_nr){
                                                     paste0(PREFIX_DACOMP_WILCOXON,PREFIX_DACOMP_division,ref_select_method_Label)
                                                     ); current_row = current_row + 1
       
-      results[current_row,] = construct_results_row(res_welch$p.values.test.ratio ,
+      results[current_row,] = construct_results_row(res_welch$p.values.test ,
                                                     paste0(PREFIX_DACOMP_WELCH,PREFIX_DACOMP_rarefaction,ref_select_method_Label)
                                                     ); current_row = current_row + 1
       
@@ -239,7 +239,7 @@ Worker_Function = function(core_nr){
       # 
       
       res_HG = exactHyperGeometricTest(data$X,data$Y,Selected_References)
-      rejected = which(p.adjust(res_HG,method = CORRECTION_TYPE_SUBZERO) < Q_LEVEL) #pvals
+      rejected = which(p.adjust(res_HG,method = CORRECTION_TYPE_SUBZERO) <= Q_LEVEL) #pvals
       true_positive = length(which(rejected %in% data$select_diff_abundant))
       false_positive = length(rejected) - true_positive
       results[current_row,] = c(SCENARIO_ID,paste0(METHOD_LABEL_HG,',', ref_select_method_Label),length(rejected),true_positive,
@@ -252,20 +252,20 @@ Worker_Function = function(core_nr){
       cat(paste0('Computing Wilcoxon \n\r'))
     
     res = wilcoxon_taxa_wise(data$X,data$Y)
-    rejected = which(p.adjust(res$p.values,method = CORRECTION_TYPE_WILCOXON) < Q_LEVEL)
+    rejected = which(p.adjust(res$p.values,method = CORRECTION_TYPE_WILCOXON) <= Q_LEVEL)
     true_positive = length(which(rejected %in% data$select_diff_abundant))
     false_positive = length(rejected) - true_positive
     results[current_row,] = c(SCENARIO_ID,METHOD_LABEL_WILCOXON_NAIVE,length(rejected),true_positive,false_positive,0) ; current_row = current_row + 1
     
     res = wilcoxon_taxa_wise(data$X,data$Y,normalize = T,normalize.P = 1)
-    rejected = which(p.adjust(res$p.values,method = CORRECTION_TYPE_WILCOXON) < Q_LEVEL)
+    rejected = which(p.adjust(res$p.values,method = CORRECTION_TYPE_WILCOXON) <= Q_LEVEL)
     true_positive = length(which(rejected %in% data$select_diff_abundant))
     false_positive = length(rejected) - true_positive
     results[current_row,] = c(SCENARIO_ID,METHOD_LABEL_WILCOXON_PERCENT,length(rejected),true_positive,false_positive,0) ; current_row = current_row + 1
     
     CSS_normalized = t(cumNormMat(t(data$X)))
     res = wilcoxon_taxa_wise(CSS_normalized,data$Y,normalize = F)
-    rejected = which(p.adjust(res$p.values,method = CORRECTION_TYPE_WILCOXON) < Q_LEVEL)
+    rejected = which(p.adjust(res$p.values,method = CORRECTION_TYPE_WILCOXON) <= Q_LEVEL)
     true_positive = length(which(rejected %in% data$select_diff_abundant))
     false_positive = length(rejected) - true_positive
     results[current_row,] = c(SCENARIO_ID,METHOD_LABEL_WILCOXON_PAULSON,length(rejected),true_positive,false_positive,0) ; current_row = current_row + 1
@@ -284,7 +284,7 @@ Worker_Function = function(core_nr){
       X_corrected = rarefy_even_sampling_depth(X_corrected, Average_Cell_Count_matrix)
       
       res = wilcoxon_taxa_wise(X_corrected,data$Y)
-      rejected = which(p.adjust(res$p.values,method = CORRECTION_TYPE_WILCOXON) < Q_LEVEL)
+      rejected = which(p.adjust(res$p.values,method = CORRECTION_TYPE_WILCOXON) <= Q_LEVEL)
       true_positive = length(which(rejected %in% data$select_diff_abundant))
       false_positive = length(rejected) - true_positive
       results[current_row,] = c(SCENARIO_ID,METHOD_LABEL_WILCOXON_qPCR,length(rejected),true_positive,false_positive,0) ; current_row = current_row + 1

@@ -7,7 +7,6 @@ dt_sd = read.csv('../../Results/REFSIM_Combined_Results_sd.csv')
 methods_to_keep = c('ALDEx2_Welch',
 'ALDEx2_Wilcoxon',
 'ANCOM',
-'DACOMP,Welch,division,S = 1.3',
 'DACOMP,Welch,rarefaction,S = 1.3',
 'DACOMP,Wilcoxon,division,S = 1.3',
 'DACOMP,Wilcoxon,rarefaction,S = 1.3',
@@ -99,7 +98,7 @@ gg_color_hue <- function(n) {
 }
 
 
-new_col_names =  c('ALDEx2-t','ALDEx2-W','ANCOM','DACOMP-t-ratio','DACOMP-t-subsample','DACOMP-ratio','DACOMP-subsample','HG','W-CSS','W-TSS','W-FLOW','Wrench','m1','effect')
+new_col_names =  c('ALDEx2-t','ALDEx2-W','ANCOM','DACOMP-t','DACOMP-ratio','DACOMP','HG','W-CSS','W-TSS','W-FLOW','Wrench','m1','effect')
 new_col_names_no_flow = new_col_names[-c(11,13,14)]
 dt_FDR_Plot = dt_FDR
 
@@ -112,8 +111,8 @@ pallete = yarrr::piratepal("xmen",
                            plot.result = FALSE)#[c(1,2,3,4,10)]          
 pallete = substr(pallete,1,7)
 
-methods_main_body = c('ALDEx2-t','ANCOM','DACOMP-subsample','HG','W-CSS','W-FLOW')
-methods_appendix = c('ALDEx2-W','DACOMP-t-subsample','W-TSS','Wrench')
+methods_main_body = c('ALDEx2-t','ANCOM','DACOMP','HG','W-CSS','W-FLOW')
+methods_appendix = c('ALDEx2-W','DACOMP-t','W-TSS','Wrench')
 methods_list = list(methods_main_body = methods_main_body, methods_appendix = methods_appendix)
 
 for(graph_id in c(1,2)){
@@ -139,7 +138,7 @@ for(graph_id in c(1,2)){
 dt_TP_Plot = dt_tp
 names(dt_TP_Plot) =new_col_names
 write.csv(dt_TP_Plot,file = '../../Results/sim1_tp.csv')
-dt_TP_Plot = dt_TP_Plot[, !(colnames(dt_TP_Plot)%in% c('WCOMP-ratio','WCOMP-t-ratio'))]
+dt_TP_Plot = dt_TP_Plot[, !(colnames(dt_TP_Plot)%in% c('HG'))]
 
 for(graph_id in c(1,2)){
   dt_TP_Plot_melt = reshape2::melt(dt_TP_Plot,id.vars = c('m1','effect'),value.name = 'TP')  
