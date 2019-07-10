@@ -1,5 +1,7 @@
+# This script is used for running two simulations found in the appendicies:
+# Analyzing the FDR of picking 
 NR.WORKERS = 7
-#SCENARIO_ID = 21 #2,3,10,11,12,16,17,21,25 #need to compute for all of these
+SCENARIO_ID = 21 # see batch file for computed values
 MAINDIR = './'
 Q_LEVEL = 0.1
 
@@ -14,7 +16,7 @@ MODE_RUN_SIMULATION = T
 MODE_COMPUTE_GLOBAL_NULL = T
 if(SCENARIO_ID %in% c(22:25))
   MODE_COMPUTE_GLOBAL_NULL = F
-MODE_COMPUTE_RANDOM_SELECT_FDR = F
+MODE_COMPUTE_RANDOM_SELECT_FDR = T
 MODE_PROCESS_RESULTS = T
 DEBUG = F
 DEBUG.SINGLE.CORE = F
@@ -23,6 +25,7 @@ GlobalNull.Test.Alpha = 0.1
 ref_select_method_Median_SD_Threshold = 1.3
 NR.Perms.GN = 200
 
+library(dacomp)
 library(subzero)
 library(foreach)
 library(doParallel)
@@ -83,13 +86,16 @@ Worker_Function = function(core_nr){
       abundance_rank = (ncol(data$X) + 1 - rank(apply(data$X,2,sum),ties.method = 'random'))
       Selected_References_most_abundant = which(abundance_rank<=50)
       
-      res = subzero.dfdr.test(X = data$X, y = data$Y,
-                              nr_reference_taxa = Selected_References_random, verbose = T, nr_perm = 1/(Q_LEVEL/(ncol(data$X))),
-                              q = Q_LEVEL,disable_DS.FDR = F)
+      res = dacomp::dacomp.test(X = data$X,y = data$Y,
+                          ind_reference_taxa = Selected_References_random,
+                          verbose = T,
+                          test = DACOMP.TEST.NAME.WILCOXON,
+                          nr_perm = 1/(Q_LEVEL/(ncol(data$X))),
+                          q = Q_LEVEL,disable_DS.FDR = F)
       
       bad_select = length(which(Selected_References_random %in% data$select_diff_abundant))
       
-      pvals = res$p.values
+      pvals = res$p.values.test
       pvals[Selected_References_random] = NA 
       rejected = which(p.adjust(pvals,method = CORRECTION_TYPE_SUBZERO) < Q_LEVEL) #pvals
       true_positive = length(which(rejected %in% data$select_diff_abundant))
@@ -101,13 +107,17 @@ Worker_Function = function(core_nr){
       TP_random_vec[b] = true_positive
       FDR_random_vec[b] = FDR
       
-      res = subzero.dfdr.test(X = data$X, y = data$Y,
-                              nr_reference_taxa = Selected_References_most_abundant, verbose = T, nr_perm = 1/(Q_LEVEL/(ncol(data$X))),
-                              q = Q_LEVEL,disable_DS.FDR = F)
+      
+      res = dacomp::dacomp.test(X = data$X,y = data$Y,
+                                ind_reference_taxa = Selected_References_most_abundant,
+                                verbose = T,
+                                test = DACOMP.TEST.NAME.WILCOXON,
+                                nr_perm = 1/(Q_LEVEL/(ncol(data$X))),
+                                q = Q_LEVEL,disable_DS.FDR = F)
       
       bad_select = length(which(Selected_References_most_abundant %in% data$select_diff_abundant))
       
-      pvals = res$p.values
+      pvals = res$p.values.test
       pvals[Selected_References_most_abundant] = NA 
       rejected = which(p.adjust(pvals,method = CORRECTION_TYPE_SUBZERO) < Q_LEVEL) #pvals
       true_positive = length(which(rejected %in% data$select_diff_abundant))
@@ -121,19 +131,18 @@ Worker_Function = function(core_nr){
     }
     
     if(MODE_COMPUTE_GLOBAL_NULL){
-      ref_select = select.references.Median.SD.Threshold(X = data$X,
-                                                         median_SD_threshold = ref_select_method_Median_SD_Threshold,
-                                                         minimal_TA = 10,maximal_TA = 200,Psuedo_Count_used = 1,factor_by_Median_Score = F)
+      ref_select = dacomp::dacomp.select_references(X = data$X,
+                                                    median_SD_threshold = ref_select_method_Median_SD_Threshold,
+                                                    minimal_TA = 10,
+                                                    maximal_TA = 200,
+                                                    Pseudo_Count_used = 1)
+      
       Selected_References = ref_select$selected_references
       X_ref = data$X[,Selected_References,drop = F]
       print(dim(X_ref))
-      # if(nrow(X_ref) ==1){
-      #   aaa =1
-      #   aaa = aaa +1
-      # }
+      
       CONTAINS_DIFF_ABUNDANT[b] = length(which(Selected_References %in% data$select_diff_abundant))
       gn_res = compute_GlobalNull_Reference(X_ref,Y = data$Y,nr.perm = NR.Perms.GN)
-      #Rejections.counter.global.null = Rejections.counter.global.null + (unlist(gn_res)<=GlobalNull.Test.Alpha)
       GN_NULL_LIST[[b]] = gn_res
     }
   }  
@@ -214,7 +223,7 @@ if(MODE_PROCESS_RESULTS){
         nr_GN_cases = nr_GN_cases + sum(res[[i]]$CONTAINS_DIFF_ABUNDANT == 0)
       }    
     }  
-    nr_reject_GN = nr_reject_GN/nr_GN_cases# (NR_REPS_PER_WORKER*NR.WORKERS) is replaced by the actual number of valid (no DA inside) references
+    nr_reject_GN = nr_reject_GN/nr_GN_cases # (NR_REPS_PER_WORKER*NR.WORKERS) is replaced by the actual number of valid (no DA inside) references
   }
   
   

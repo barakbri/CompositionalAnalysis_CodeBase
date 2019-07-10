@@ -13,20 +13,34 @@ Tasks:
 (V) REFSIM_NoCompositionality_Scenario
 (v) REFSIM_GenerateSettings_Index
 
+( ) REFSIM_compute_FDR_random_selection
+( ) REFSIM_compute_FDR_random_selection_batch_script
+( ) REFSIM_Plot_Score_Histo_For_Sims
+
 ( ) REFSIM_SingleScenario
 ( ) REFSIM_MultipleScenario_batch
 ( ) REFSIM_Analyze - organize
 ( ) REFSIM_Analyze_Results_Tables
 ( ) REFSIM_Analyze_chance_of_bad_taxa - organize
-( ) REFSIM_Plot_Score_Histo_For_Sims
 
 ( ) RDE_Crohn - organize and document
 ( ) RDE_HMP_two_site_comparison - organize
 ( ) RDE_HMP_main - organize
 ( ) RDE_Generate_Latex_tables
 
+- Rerun REFSIM_compute_FDR_random_selection,
+- Rerun        APPENDIX_SIM_ANCOM_NULL_CASES
 
 
+Readme - packages
+
+Readme - subzero
+
+Readme - main dir
+ description of repo
+ desc of dir structure
+ desc of main files and order to reproduce
+ 
 
 
 
