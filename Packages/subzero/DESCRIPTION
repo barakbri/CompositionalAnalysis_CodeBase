@@ -1,11 +1,12 @@
 Package: subzero
 Type: Package
-Title: What the Package Does in One 'Title Case' Line
+Title: Wilcoxon rank sum test implementation, with permutation, early stopping and asymptotic correction of ties.
 Version: 1.0
 Date: 2018-07-26
 Author: Barak Brill
 Maintainer: Barak Brill <barakbri@mail.tau.ac.il>
-Description: One paragraph description of what the package does as one or more full sentences.
+Description: Package is used for a permutation based implementation of the wilcoxon rank sum test. Used for internal use
 License: LGPL2
 Imports: Rcpp (>= 0.12.17),coin
 LinkingTo: Rcpp
+RoxygenNote: 6.1.1

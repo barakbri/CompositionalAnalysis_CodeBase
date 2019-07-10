@@ -9,15 +9,3 @@ rcpp_Wilcoxon_PermTest_Given_Permutations <- function(X, Y) {
     .Call(`_subzero_rcpp_Wilcoxon_PermTest_Given_Permutations`, X, Y)
 }
 
-rcpp_TwoPartTest <- function(X, Y, B, DoWald, ReportPerm) {
-    .Call(`_subzero_rcpp_TwoPartTest`, X, Y, B, DoWald, ReportPerm)
-}
-
-rcpp_TwoPartTest_Given_Permutations <- function(X, Y) {
-    .Call(`_subzero_rcpp_TwoPartTest_Given_Permutations`, X, Y)
-}
-
-rcpp_Compute_Wilcoxon_Signed_Rank_Stat <- function(RankedDifferences, SecondGroupBigger) {
-    .Call(`_subzero_rcpp_Compute_Wilcoxon_Signed_Rank_Stat`, RankedDifferences, SecondGroupBigger)
-}
-
