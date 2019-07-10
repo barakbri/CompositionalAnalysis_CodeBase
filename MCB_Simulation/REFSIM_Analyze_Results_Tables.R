@@ -21,11 +21,14 @@ dt_sd = dt_sd[dt$methodlabel %in% methods_to_keep,]
 
 
 #table 1
-dt_1 = dt[dt$setting_id %in% c(1:11),]
+dt_1 = dt[dt$setting_id %in% c(1:11,26:27),]
 dt_1$m1 = rep(NA,nrow(dt_1))
 dt_1$effect = rep(NA,nrow(dt_1))
 
 dt_1$m1[dt_1$setting_id %in% (c(1,3,5,7,9))+1 ] = 10
+dt_1$m1[dt_1$setting_id%in% (c(1,3,5,7,9))+2 ] = 100
+dt_1$m1[dt_1$setting_id %in% c(26) ] = 10
+dt_1$m1[dt_1$setting_id %in% c(27) ] = 100
 dt_1$m1[dt_1$setting_id%in% (c(1,3,5,7,9))+2 ] = 100
 dt_1$m1[dt_1$setting_id == 30] = 0
 
@@ -35,17 +38,19 @@ dt_1$effect[dt_1$setting_id %in% c(4,5)] = 1.0
 dt_1$effect[dt_1$setting_id %in% c(6,7)] = 1.5
 dt_1$effect[dt_1$setting_id %in% c(8,9)] = 2.0
 dt_1$effect[dt_1$setting_id %in% c(10,11)] = 2.5
+dt_1$effect[dt_1$setting_id %in% c(26,27)] = 3.0
 
 #install.packages('reshape2')
 library(reshape2)
 names(dt_1)
+settings_index = c(1:11,26:27)
 method_names = as.character(unique(dt_1$methodlabel))
-dt_tp = matrix(NA,nrow = length(1:11),ncol  = length(method_names))
-dt_rejected = matrix(NA,nrow = length(1:11),ncol  = length(method_names))
-dt_FDR = matrix(NA,nrow = length(1:11),ncol  = length(method_names))
+dt_tp = matrix(NA,nrow = length(settings_index),ncol  = length(method_names))
+dt_rejected = matrix(NA,nrow = length(settings_index),ncol  = length(method_names))
+dt_FDR = matrix(NA,nrow = length(settings_index),ncol  = length(method_names))
 for(i in 1:length(method_names)){
-  for(j in 1:11){
-    tp_row = which(dt_1$setting_id == j & dt_1$methodlabel == method_names[i])
+  for(j in 1:length(settings_index)){
+    tp_row = which(dt_1$setting_id == settings_index[j] & dt_1$methodlabel == method_names[i])
     dt_tp[j,i] = dt_1$tp[tp_row[1]]
     dt_rejected[j,i] = dt_1$rejected[tp_row[1]]
     dt_FDR[j,i] = dt_1$fdr[tp_row[1]]
@@ -61,12 +66,12 @@ colnames(dt_FDR) = method_names
 colnames(dt_tp) = method_names
 
 dt_tp = as.data.frame(dt_tp)
-dt_tp$m1 =c(0,rep(c(10,100),5))
-dt_tp$effect =c(0,rep(0.5,2),rep(1.0,2),rep(1.5,2),rep(2.0,2),rep(2.5,2))
+dt_tp$m1 =c(0,rep(c(10,100),6))
+dt_tp$effect =c(0,rep(0.5,2),rep(1.0,2),rep(1.5,2),rep(2.0,2),rep(2.5,2),rep(3.0,2))
 
 dt_FDR = as.data.frame(dt_FDR)
-dt_FDR$m1 =c(0,rep(c(10,100),5))
-dt_FDR$effect =c(0,rep(0.5,2),rep(1.0,2),rep(1.5,2),rep(2.0,2),rep(2.5,2))
+dt_FDR$m1 =c(0,rep(c(10,100),6))
+dt_FDR$effect =c(0,rep(0.5,2),rep(1.0,2),rep(1.5,2),rep(2.0,2),rep(2.5,2),rep(3.0,2))
 
 library(xtable)
 names(dt_tp)
@@ -88,7 +93,8 @@ Compute_SE_for_Scenarios = function(scenarios_vec,B=96,col = 'fdr'){
   return(max(as.numeric(as.character(dt_sd[as.character(dt_sd$setting_id) %in% as.character(c(scenarios_vec)),col])))/sqrt(B))
 }
 
-Compute_SE_for_Scenarios(1:11)
+se_fdr = Compute_SE_for_Scenarios(1:11)
+se_fdr
 Compute_SE_for_Scenarios(1:11,col = 'tp')
 
 library(latex2exp)
@@ -111,7 +117,7 @@ pallete = yarrr::piratepal("xmen",
                            plot.result = FALSE)#[c(1,2,3,4,10)]          
 pallete = substr(pallete,1,7)
 
-methods_main_body = c('ALDEx2-t','ANCOM','DACOMP','HG','W-CSS','W-FLOW')
+methods_main_body = c('ALDEx2-t','ANCOM','DACOMP-ratio','DACOMP','HG','W-CSS','W-FLOW')
 methods_appendix = c('ALDEx2-W','DACOMP-t','W-TSS','Wrench')
 methods_list = list(methods_main_body = methods_main_body, methods_appendix = methods_appendix)
 
@@ -128,8 +134,8 @@ for(graph_id in c(1,2)){
   dt_FDR_Plot_melt = dt_FDR_Plot_melt[-which(dt_FDR_Plot_melt$m1==0),]
   dt_FDR_Plot_melt$m1 = factor(dt_FDR_Plot_melt$m1,levels = c(10,100),labels = c('m1 = 10','m1 = 100'))
   p_1_FDR = ggplot(dt_FDR_Plot_melt,aes(x=Effect,y = FDR,color = Method))+geom_line(lwd = 0.75) + geom_point(size = 0.4) +
-    facet_wrap(m1~.) + theme_bw()+geom_hline(yintercept = 0.1,color = 'black',lty = 1,alpha=0.2)+xlab(TeX("$\\lambda_{effect}$")) +
-    scale_color_manual(values=as.character(pallete[c(1,2,3,4,5,6)]))  #gg_color_hue(10)[1:10]
+    facet_wrap(m1~.) + theme_bw()+geom_hline(yintercept = 0.1,color = 'black',lty = 1,alpha=0.2)+xlab(TeX("$\\lambda_{effect}$")) + xlim(c(0,3))+
+    scale_color_manual(values=as.character(pallete[c(1,2,3,4,5,6,7)])) +  geom_hline(yintercept = 0.1+2*se_fdr ,color = 'black',lty = 2,alpha=0.2) #gg_color_hue(10)[1:10]
   ggsave(p_1_FDR,filename = paste0('../../Results/sim_p1_FDR',graph_id,'.pdf'),width = 7,height = 3)
 }
 
@@ -148,8 +154,8 @@ for(graph_id in c(1,2)){
   names(dt_TP_Plot_melt)[2] = 'Effect'
   dt_TP_Plot_melt$m1 = factor(dt_TP_Plot_melt$m1,levels = c(10,100),labels = c('m1 = 10','m1 = 100'))
   p_1_TP = ggplot(dt_TP_Plot_melt,aes(x=Effect,y = TP,color = Method))+geom_line(lwd = 0.75)+geom_point(size = 0.4)+
-    facet_wrap(m1~.,scales = "free") + theme_bw() +xlab(TeX("$\\lambda_{effect}$"))+
-    scale_color_manual(values=as.character(pallete[c(1,2,3,4,5,6)]))
+    facet_wrap(m1~.,scales = "free") + theme_bw() +xlab(TeX("$\\lambda_{effect}$"))+xlim(c(0.5,3))+
+    scale_color_manual(values=as.character(pallete[c(1,2,3,4,6,7,5)]))
   ggsave(p_1_TP,filename = paste0('../../Results/sim_p1_TP',graph_id,'.pdf'),width = 7,height = 3)
 }
 
@@ -187,8 +193,9 @@ for(i in 1:length(method_names)){
 }
 
 
-dt_tp
-dt_FDR
+colnames(dt_tp) = method_names
+colnames(dt_FDR) = method_names
+
 
 for(i in 1:ncol(dt_tp)){
   dt_tp[,i] = as.character(round(as.numeric(dt_tp[,i]),0))
@@ -198,17 +205,17 @@ for(i in 1:ncol(dt_tp)){
 }
 
 print_by_Xtable = function(dt_combined,cols_to_remove){
-  colnames(dt_combined) = new_col_names_no_flow
   dt_combined = dt_combined
   dt_combined = as.data.frame(dt_combined)
-  dt_combined$m1 =c(rep(120,5),rep(60,5))
-  dt_combined$p_high =rep(c(0.9,0.8,0.7,0.6,0.5),2)
-  print(xtable(dt_combined[,-cols_to_remove]), include.rownames=FALSE)
+  m1 =c(rep(120,5),rep(60,5))
+  p_high =rep(c(0.9,0.8,0.7,0.6,0.5),2)
+  dt_combined =cbind(m1,p_high,dt_combined[,-cols_to_remove])
+  print(xtable(dt_combined), include.rownames=FALSE)
   return(dt_combined)
 }
 
-cols_remove_main = c(2,4,5,6,10,11)
-cols_remove_appendix = c(1,3,7,8,9)
+cols_remove_main = c(2,4,9,10)
+cols_remove_appendix = c(1,3,5,6,7,8)
 
 
 write.csv(print_by_Xtable(dt_FDR,cols_remove_main),file = '../../Results/sim2_FDR.csv')
@@ -225,9 +232,6 @@ Compute_SE_for_Scenarios(12:21,col = 'tp')
 #table 3
 
 dt_3 = dt[dt$setting_id %in% c(22:25),]
-
-
-
 
 #install.packages('reshape2')
 library(reshape2)
@@ -248,17 +252,17 @@ for(i in 1:length(method_names)){
 
 dt_tp = cbind(c('15:15','20:20','25:25','30:30'),round(dt_tp,2))
 dt_FDR = cbind(c('15:15','20:20','25:25','30:30'),round(dt_FDR,2))
-colnames(dt_tp) = c('n',new_col_names_no_flow)
-colnames(dt_FDR) = c('n',new_col_names_no_flow)
+colnames(dt_tp) = c('n',method_names)
+colnames(dt_FDR) = c('n',method_names)
 
 
 write.csv(dt_FDR,row.names = F,file = '../../Results/sim3_FDR.csv')
 write.csv(dt_tp,row.names = F,file = '../../Results/sim3_TP.csv')
 
-print(xtable(dt_FDR[,-c(3,5,6,7,11,12)]), include.rownames=FALSE)#main body
-print(xtable(dt_FDR[,-c(2,4,8,9)]), include.rownames=FALSE)
-print(xtable(dt_tp[,-c(3,5,6,7,11,12,9)]), include.rownames=FALSE) # -9 = remove HG
-print(xtable(dt_tp[,-c(2,4,8,9)]), include.rownames=FALSE) # -9 = remove HG
+print(xtable(dt_FDR[,-c(3,5,10,11)]), include.rownames=FALSE)#main body
+print(xtable(dt_FDR[,c(1,3,5,10,11)]), include.rownames=FALSE)
+print(xtable(dt_tp[,-c(3,5,10,11,8)]), include.rownames=FALSE) #  remove HG
+print(xtable(dt_tp[,c(1,3,5,10,11)]), include.rownames=FALSE) #  remove HG
 
 Compute_SE_for_Scenarios(22:25)
 Compute_SE_for_Scenarios(22:25,col = 'tp')

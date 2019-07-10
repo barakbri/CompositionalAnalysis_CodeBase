@@ -1,4 +1,4 @@
-BATCH_VEC = c(1:25)
+BATCH_VEC = c(1:27)
 source(paste0('REFSIM_GenerateSettings_Index.R'))
 RESULTS_DIR = paste0("../../Results/")
 REFSIM_aggregated_results_file = function(RESULTS_DIR,SCENARIO_ID,suffix = ""){ #suffix "sd_" for sd

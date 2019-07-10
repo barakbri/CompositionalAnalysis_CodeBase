@@ -1,7 +1,7 @@
 compute_by_method = 'DACOMP,Wilcoxon,rarefaction,S = 1.3'
 nr.reps.per.case = 96
 
-cases_arr = c(1:25)
+cases_arr = c(1:27)
 diag_mat = matrix(NA,nrow = length(cases_arr),ncol = 3)
 for(q in 1:length(cases_arr)){
   filename_results = paste0("../../Results//REFSIM_results_",cases_arr[q],".RData")

@@ -59,3 +59,7 @@ REFSIM_SETTINGS_LIST[[length(REFSIM_SETTINGS_LIST) + 1]] = REFSIM_generate_NOCOM
 REFSIM_SETTINGS_LIST[[length(REFSIM_SETTINGS_LIST) + 1]] = REFSIM_generate_NOCOMP_TYPE_Scenario(label = "Scenario with no compositionality, 20:20 ",m_diff_abundant=100, mean_vec = 1*c(rep(200,50),rep(20,150),rep(1,800)),effect_multiplier = 0.75,n0 = 20,n1=20,select_diff_abundant = select_diff_abundant)
 REFSIM_SETTINGS_LIST[[length(REFSIM_SETTINGS_LIST) + 1]] = REFSIM_generate_NOCOMP_TYPE_Scenario(label = "Scenario with no compositionality, 25:25 ",m_diff_abundant=100, mean_vec = 1*c(rep(200,50),rep(20,150),rep(1,800)),effect_multiplier = 0.75,n0 = 25,n1=25,select_diff_abundant = select_diff_abundant)
 REFSIM_SETTINGS_LIST[[length(REFSIM_SETTINGS_LIST) + 1]] = REFSIM_generate_NOCOMP_TYPE_Scenario(label = "Scenario with no compositionality, 30:30 ",m_diff_abundant=100, mean_vec = 1*c(rep(200,50),rep(20,150),rep(1,800)),effect_multiplier = 0.75,n0 = 30,n1=30,select_diff_abundant = select_diff_abundant)
+
+# 26,27
+REFSIM_SETTINGS_LIST[[length(REFSIM_SETTINGS_LIST) + 1]] = REFSIM_generate_qPCR_TYPE_Scenario(label = 'qPCR, m1 = 10, 60:60, effect = 3.0', m_diff_abundant = 10,global_NULL = F, effect_relative_to_total_sample = 3.0, n0 = n_qpcr,n1 = n_qpcr, poisson_mean_reads = qPCR_MEDIAN_READS) 
+REFSIM_SETTINGS_LIST[[length(REFSIM_SETTINGS_LIST) + 1]] = REFSIM_generate_qPCR_TYPE_Scenario(label = 'qPCR, m1 = 100, 60:60, effect = 3.0', m_diff_abundant = 100,global_NULL = F, effect_relative_to_total_sample = 3.0, n0 = n_qpcr,n1 = n_qpcr, poisson_mean_reads = qPCR_MEDIAN_READS)
