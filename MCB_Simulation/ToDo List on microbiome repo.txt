@@ -1,29 +1,29 @@
+Tasks:
+( ) Graph_section_2_1_incorrect_testing- document
+( ) PLOT_NO_REMOVE_OBS - document
+( ) ReferenceScore_Plot - organize
+( ) APPENDIX_SIM_ANCOM_NULL_CASES - document
+( ) exactHyperGeometricTest- document
+( ) Wilcoxon_TaxaWise - document
 
-Graph_section_2_1_incorrect_testing- document
-PLOT_NO_REMOVE_OBS - document
-ReferenceScore_Plot - organize
-APPENDIX_SIM_ANCOM_NULL_CASES - document
-exactHyperGeometricTest- document
-Wilcoxon_TaxaWise - document
+( ) rename qPCR_data.RData
+( ) REF_SIM_preprocess_Crohn_data -  organize
+( ) REFSIM_qPCR_SCENARIO - 
+( ) REFSIM_NO_OVERDISPERSION_SCENARIOS
+( ) REFSIM_NoCompositionality_Scenario
+( ) REFSIM_GenerateSettings_Index
 
-rename qPCR_data.RData
-REF_SIM_preprocess_Crohn_data -  organize
-REFSIM_qPCR_SCENARIO - 
-REFSIM_NO_OVERDISPERSION_SCENARIOS
-REFSIM_NoCompositionality_Scenario
-REFSIM_GenerateSettings_Index
+( ) REFSIM_SingleScenario
+( ) REFSIM_MultipleScenario_batch
+( ) REFSIM_Analyze - organize
+( ) REFSIM_Analyze_Results_Tables
+( ) REFSIM_Analyze_chance_of_bad_taxa - organize
+( ) REFSIM_Plot_Score_Histo_For_Sims
 
-REFSIM_SingleScenario
-REFSIM_MultipleScenario_batch
-REFSIM_Analyze - organize
-REFSIM_Analyze_Results_Tables
-REFSIM_Analyze_chance_of_bad_taxa - organize
-REFSIM_Plot_Score_Histo_For_Sims
-
-RDE_Crohn - organize and document
-RDE_HMP_two_site_comparison - organize
-RDE_HMP_main - organize
-RDE_Generate_Latex_tables
+( ) RDE_Crohn - organize and document
+( ) RDE_HMP_two_site_comparison - organize
+( ) RDE_HMP_main - organize
+( ) RDE_Generate_Latex_tables
 
 
 
