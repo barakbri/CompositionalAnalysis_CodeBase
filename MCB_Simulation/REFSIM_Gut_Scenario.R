@@ -1,16 +1,16 @@
 library(vegan)
-load(paste0('qPCR_data.RData')) #=> qPCR_data
+load(paste0('Gut_Flow_data.RData')) #=> Gut_Flow_data
 
-REFSIM_QPCR_TYPE_SCENARIO_DEF = 'REFSIM_QPCR_TYPE_SCENARIO_DEF'
+REFSIM_GUT_TYPE_SCENARIO_DEF = 'REFSIM_GUT_TYPE_SCENARIO_DEF'
 
-select_diff_abundant_10 = sample(1:(ncol(qPCR_data$counts_matrix)),size = 10,replace = F)
+select_diff_abundant_10 = sample(1:(ncol(Gut_Flow_data$counts_matrix)),size = 10,replace = F)
 select_diff_abundant_scalar_10 = sample(c(0.5,1,1.5),size = 10,replace = T)
 
-select_diff_abundant_100 = sample(1:(ncol(qPCR_data$counts_matrix)),size = 100,replace = F)
+select_diff_abundant_100 = sample(1:(ncol(Gut_Flow_data$counts_matrix)),size = 100,replace = F)
 select_diff_abundant_scalar_100 = sample(c(0.5,1,1.5),size = 100,replace = T)
 
 #generate frequencies
-REFSIM_generate_qPCR_TYPE_Scenario = function(label = "MISSING_LABEL",
+REFSIM_generate_Gut_TYPE_Scenario = function(label = "MISSING_LABEL",
                                m_diff_abundant = 10,
                                effect_relative_to_total_sample  = 0.05,
                                n0 = 200,
@@ -21,7 +21,7 @@ REFSIM_generate_qPCR_TYPE_Scenario = function(label = "MISSING_LABEL",
                                Const_Size_Effect_Multiplier = 2,
                                Percent_to_add = 0.5
                                ){
-  m = ncol(qPCR_data$counts_matrix)
+  m = ncol(Gut_Flow_data$counts_matrix)
   select_diff_abundant = 0
   select_diff_abundant_scalar = 1
   if(!global_NULL){
@@ -59,19 +59,19 @@ REFSIM_generate_qPCR_TYPE_Scenario = function(label = "MISSING_LABEL",
   ret$index_in_selected_for_reducing = index_in_selected_for_reducing
   ret$Const_Size_Effect_Multiplier = Const_Size_Effect_Multiplier
   ret$Percent_to_add = Percent_to_add
-  class(ret) = REFSIM_QPCR_TYPE_SCENARIO_DEF
+  class(ret) = REFSIM_GUT_TYPE_SCENARIO_DEF
   return(ret)
 }
 
 
-REFSIM_generate_data_for_qPCR_Type_Scenario = function(setting_def){
+REFSIM_generate_data_for_Gut_Type_Scenario = function(setting_def){
     
-  if(class(setting_def) != REFSIM_QPCR_TYPE_SCENARIO_DEF){
+  if(class(setting_def) != REFSIM_GUT_TYPE_SCENARIO_DEF){
     stop("Invalid class object used for generation")
   }
   
-  OTU_Counts = qPCR_data$counts_matrix
-  qPCR_Counts = qPCR_data$qPCR_counts
+  OTU_Counts = Gut_Flow_data$counts_matrix
+  Flow_counts = Gut_Flow_data$Flow_counts
   
   label = setting_def$label
   m = setting_def$m
@@ -100,14 +100,14 @@ REFSIM_generate_data_for_qPCR_Type_Scenario = function(setting_def){
     temp_row = as.numeric(OTU_Counts[sampled_ind,])
     
     
-    qPCR_counts_in_sample = qPCR_Counts[sampled_ind]
-    X_unsampled[i,] = qPCR_counts_in_sample * temp_row/sum(temp_row)
+    Flow_counts_in_sample = Flow_counts[sampled_ind]
+    X_unsampled[i,] = Flow_counts_in_sample * temp_row/sum(temp_row)
     
     
     if(Y[i] == 1){
       if(!Const_Size_Variant){
         for(s in 1:length(select_diff_abundant)){
-          lambda_for_effect = effect_relative_to_total_sample * qPCR_counts_in_sample* select_diff_abundant_scalar[s]*rbinom(1,1,Percent_to_add)/length(select_diff_abundant_scalar)
+          lambda_for_effect = effect_relative_to_total_sample * Flow_counts_in_sample* select_diff_abundant_scalar[s]*rbinom(1,1,Percent_to_add)/length(select_diff_abundant_scalar)
           X_unsampled[i,select_diff_abundant[s]] = X_unsampled[i,select_diff_abundant[s]] + round(rnorm(1,lambda_for_effect,sqrt(lambda_for_effect)))
         }  
       }else{

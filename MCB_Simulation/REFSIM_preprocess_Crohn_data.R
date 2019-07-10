@@ -1,7 +1,7 @@
 # Script 
 
 library(biomformat)
-file_path <- "E:/MCB2/MCB2/MCB_Simulation/gut_otu_table_sim.RData"
+file_path <- "./gut_otu_table_sim.RData"
 load(file_path)
 
 #dim(otu_table)
@@ -88,9 +88,9 @@ threshold = 4
 to_keep = which(total_counts_in_taxa >= threshold) 
 X2 = X[,to_keep]
 
-qPCR_data = list()
-qPCR_data$counts_matrix = X2
-qPCR_data$qPCR_counts = Average_Cell_Count
+Gut_Flow_data = list()
+Gut_Flow_data$counts_matrix = X2
+Gut_Flow_data$Flow_counts = Average_Cell_Count
 
-save(qPCR_data,file = 'E:/MCB2/MCB2/MCB_Simulation/qPCR_data.RData')
+save(Gut_Flow_data,file = 'Gut_Flow_data.RData')
 

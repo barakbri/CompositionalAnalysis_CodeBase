@@ -1,5 +1,5 @@
-NR.WORKERS = 96 #63#72-1#63
-#SCENARIO_ID = 10
+NR.WORKERS = 7#96
+SCENARIO_ID = 10
 MAINDIR = './'
 Q_LEVEL = 0.1
 
@@ -12,9 +12,9 @@ CORRECTION_TYPE_WILCOXON = 'BH'
 
 MODE_RUN_SIMULATION = T
 MODE_PROCESS_RESULTS = T
-DEBUG = F
+DEBUG = T
 DEBUG.SINGLE.CORE = F
-DISABLE_ANCOM = F
+DISABLE_ANCOM = T
 
 library(dacomp)
 library(foreach)
@@ -37,7 +37,7 @@ RNG_SEED = 1
 REPS_PER_SETTING = 1*NR.WORKERS 
 
 if(DEBUG){
-  NR.WORKERS = 1
+  NR.WORKERS = 7
   REPS_PER_SETTING = 1*NR.WORKERS
 }
 
@@ -50,7 +50,7 @@ NR_REPS_PER_WORKER = ceiling(REPS_PER_SETTING/NR.WORKERS)
 METHOD_LABEL_ANCOM = "ANCOM"
 METHOD_LABEL_HG = "HG"
 METHOD_LABEL_WILCOXON_NAIVE   = "WILCOXON_NAIVE"
-METHOD_LABEL_WILCOXON_qPCR    = "WILCOXON_qPCR"
+METHOD_LABEL_WILCOXON_FLOW    = "WILCOXON_FLOW"
 METHOD_LABEL_WILCOXON_PERCENT = "WILCOXON_PERCENT"
 METHOD_LABEL_WILCOXON_PAULSON = "WILCOXON_PAULSON"
 METHOD_LABEL_ALDEx2_Welch     = "ALDEx2_Welch"
@@ -271,11 +271,11 @@ Worker_Function = function(core_nr){
     results[current_row,] = c(SCENARIO_ID,METHOD_LABEL_WILCOXON_PAULSON,length(rejected),true_positive,false_positive,0) ; current_row = current_row + 1
     
     
-    if(class(current_setting_generator) %in% c(REFSIM_QPCR_TYPE_SCENARIO_DEF) & "Total_Original_Counts" %in% names(data)){
+    if(class(current_setting_generator) %in% c(REFSIM_GUT_TYPE_SCENARIO_DEF) & "Total_Original_Counts" %in% names(data)){
       
       
       if(DEBUG)
-        cat(paste0('Computing Wilcoxon over qPCR adjusted values \n\r'))
+        cat(paste0('Computing Wilcoxon over Flow-Cytometry adjusted values \n\r'))
       
       X_corrected = data$X
       row.names(X_corrected) = 1:(nrow(X_corrected))
@@ -287,8 +287,7 @@ Worker_Function = function(core_nr){
       rejected = which(p.adjust(res$p.values,method = CORRECTION_TYPE_WILCOXON) <= Q_LEVEL)
       true_positive = length(which(rejected %in% data$select_diff_abundant))
       false_positive = length(rejected) - true_positive
-      results[current_row,] = c(SCENARIO_ID,METHOD_LABEL_WILCOXON_qPCR,length(rejected),true_positive,false_positive,0) ; current_row = current_row + 1
-      
+      results[current_row,] = c(SCENARIO_ID,METHOD_LABEL_WILCOXON_FLOW,length(rejected),true_positive,false_positive,0) ; current_row = current_row + 1
     }
     
         
