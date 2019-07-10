@@ -1,5 +1,19 @@
+#' Function for performing Wilcoxon rank sum tests over a dataset
+#' The function performes Wilcoxon rank sum tests over the marginal distributions of taxa, and returns a list with a single item 'p.values' - the array of P-values
+#' WARNING: this is not a valid procedure - see manuscript for additional details
+#' @param X matrix of counts, rows are samples
+#' @param y a vector of 0\1's - group labeling
+#' @param normalize should normalization be performed
+#' @param normalize.P the ratio of sorted counts used for normalization. 1 is equivlant to TSS normalization.
+#' @param nr.perms number of permutations for computing P-values
+#'
+#' @return
+#' @export
+#'
+#' @examples
 wilcoxon_taxa_wise = function(X,y,normalize = F,normalize.P = 1.0,nr.perms = 1/(0.05/ncol(X))){
   pvals = rep(NA,ncol(X))
+  #handle normalization, if required
   if(normalize){
     normalizer.vec = rep(1,nrow(X))
     q= floor(normalize.P * ncol(X))
@@ -9,8 +23,8 @@ wilcoxon_taxa_wise = function(X,y,normalize = F,normalize.P = 1.0,nr.perms = 1/(
       X[i,1:ncol(X)] = X[i,1:ncol(X)] /normalizer.vec[i]
     }
   }
+  #compute P-values by exact permutations
   for(i in 1:ncol(X)){
-      #pvals[i] = wilcox.test(X[y==0,i],X[y==1,i],exact = F,paired = paired)$p.value
     pvals[i] = subzero::PermSumCount.test(X = X[,i],Y = y,B = nr.perms,DoWald = as.integer(0))$p.value
     if(is.nan(pvals[i])){pvals[i] = 1}
   }
@@ -18,12 +32,3 @@ wilcoxon_taxa_wise = function(X,y,normalize = F,normalize.P = 1.0,nr.perms = 1/(
   ret$p.values = pvals
   return(ret)
 }
-
-#temp = Scenario_simulation_advanced_null_10()  
-#temp2 = wilcoxon_taxa_wise(temp$X, as.numeric(as.factor(temp$Y))-1)
-#temp3 = wilcoxon_taxa_wise(temp$X, as.numeric(as.factor(temp$Y))-1,normalize = T)
-#temp2$p.values
-#temp3$p.values
-
-#X = temp$X
-#y = as.numeric(as.factor(temp$Y))-1

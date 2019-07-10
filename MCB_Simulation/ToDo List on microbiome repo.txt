@@ -1,10 +1,10 @@
 Tasks:
 (V) Graph_section_2_1_incorrect_testing- document
-( ) PLOT_NO_REMOVE_OBS - document
-( ) ReferenceScore_Plot - organize
-( ) APPENDIX_SIM_ANCOM_NULL_CASES - document
-( ) exactHyperGeometricTest- document
-( ) Wilcoxon_TaxaWise - document
+(V) PLOT_NO_REMOVE_OBS - document
+(V) ReferenceScore_Plot - organize
+(V) APPENDIX_SIM_ANCOM_NULL_CASES - document
+(V) exactHyperGeometricTest- document
+(V) Wilcoxon_TaxaWise - document
 
 ( ) rename qPCR_data.RData
 ( ) REF_SIM_preprocess_Crohn_data -  organize
