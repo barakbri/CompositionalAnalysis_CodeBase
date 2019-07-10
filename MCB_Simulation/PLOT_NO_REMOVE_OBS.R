@@ -1,19 +1,22 @@
 
-#pdf(file = paste0('C:/MCB2/Results/NO_FILTER_GRAPH.pdf'))
-pdf(file = paste0('D:/Microbiome Paper/NO_FILTER_GRAPH.pdf'))
+#This script is used for producing figure 2 in section 3 (explains why dropping samples based on 
+#observed number of counts in subvector is wrong)
+#See manuscript for description of graph
+
+
+pdf(file = paste0('../../Results/NO_FILTER_GRAPH.pdf'))
 layout(matrix(c(1,1, 2,3), nrow = 2, ncol = 2, byrow = TRUE))
-#par(mfcol=c(2,2))
 cex_param = 0.8
 n_X = n_Y = 16
 rate_X = 20
 rate_Y = 30
 set.seed(1)
-pj = sample(x = c(0.9,0.5), size = n_X, replace = T)
+pj = sample(x = c(0.9,0.5), size = n_X, replace = T) #sample the overdispersion pattern
 qj = sample(x = c(0.9,0.5), size = n_Y, replace = T)
-N_X = rpois(n_X,lambda = rate_X + 1*rate_X*(pj>0.5))
+N_X = rpois(n_X,lambda = rate_X + 1*rate_X*(pj>0.5)) # sample subvector depths
 N_Y = rpois(n_X,lambda = rate_Y)
 
-X_j = rbinom(n_X,size = N_X,prob = pj)
+X_j = rbinom(n_X,size = N_X,prob = pj)  #sample counts in subvectors
 Y_j = rbinom(n_Y,size = N_Y,prob = qj)
 
 
@@ -22,7 +25,7 @@ Y_r = N_Y - Y_j
 
 AXIS_LIMIT = max(max(c(X_j,Y_j)),max(c(X_r,Y_r)))
 
-#PLOT1
+#PLOT1 - counts in vectors - prior to subsampling
 plot(Y_j,Y_r,pch=1,col = 'black',xlim = c(0,40),ylim = c(0,20),main = 'A',xlab = "Counts in taxon j",ylab = "Counts in reference",asp = 1 ,cex = cex_param)
 points(X_j,X_r,pch=4,col = 'black' ,cex = cex_param)
 clip(0,40, 0, 20)
@@ -31,7 +34,7 @@ abline(0,0.1,col = 'blue',lwd = 1)
 FILTER_FROM = 25
 abline(FILTER_FROM,-1,col = 'black',lwd = 1,lty = 2)
 
-#PLOT2
+#PLOT2 - counts in vector after subsampling, without filtration
 lambda_rar = min(N_X,N_Y)
 X_tilde_j = rhyper(n_X,m = X_j,n = X_r,k = lambda_rar)
 Y_tilde_j = rhyper(n_Y,m = Y_j,n = Y_r,k = lambda_rar)
@@ -47,7 +50,7 @@ abline(0,0.1,col = 'blue',lwd = 1)
 arrows(0+0.3,lambda_rar-0.3,x1 = lambda_rar-0.3,y1 = 0.3,col = 'black',lty = 2,lwd = 1,code = 0)
 
 
-#PLOT3
+#PLOT3 - counts in vector after subsampling, with filtration
 
 X_j_filtered = X_j[(X_j + X_r)>=FILTER_FROM]
 X_r_filtered = X_r[(X_j + X_r)>=FILTER_FROM]
@@ -72,4 +75,4 @@ arrows(0+0.3,lambda_rar_filtered-0.3,x1 = lambda_rar_filtered-0.3,y1 = 0.3,col =
 
 
 dev.off()
-#par(mfrow=c(1,1))
+par(mfrow=c(1,1))
