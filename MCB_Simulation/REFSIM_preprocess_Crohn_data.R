@@ -1,11 +1,12 @@
-# Script 
+# This script is used for preprocessing sOTU counts for the crohn dataset into a data structure used for simulation
+# This is data taken from the healthy group, used for the analysis in the third section of van de putte et al.
 
+#Load data
 library(biomformat)
 file_path <- "./gut_otu_table_sim.RData"
 load(file_path)
 
-#dim(otu_table)
-
+#A vector of cell counts, this is taken from the supplementry data for the paper).
 Average_Cell_Count = c(99183906832,
                        217221266674,
                        151329659639,
@@ -73,7 +74,7 @@ Average_Cell_Count = c(99183906832,
                        132689255189,
                        98343121358)
   
-
+# flip the OTU table, reorder rows
 otu_table = t(otu_table)
 reordering_permutation = order(rownames(otu_table))
 otu_table = otu_table[reordering_permutation,]
@@ -82,12 +83,14 @@ rownames(otu_table) #it is now ordered
 X = otu_table
 Average_Cell_Count = Average_Cell_Count
 
+# We keep only taxa that appeared in at least 4 subject, 4 being a threshold chosen for the simulation
 prevalence_matrix = 1*(X>0)
 total_counts_in_taxa = as.numeric(apply(prevalence_matrix,2,sum))
 threshold = 4
 to_keep = which(total_counts_in_taxa >= threshold) 
 X2 = X[,to_keep]
 
+# Pack as an object and save
 Gut_Flow_data = list()
 Gut_Flow_data$counts_matrix = X2
 Gut_Flow_data$Flow_counts = Average_Cell_Count

@@ -7,11 +7,11 @@ Tasks:
 (V) Wilcoxon_TaxaWise - document
 
 (V) rename qPCR_data.RData -> Gut_Flow_data.RData
-( ) REF_SIM_preprocess_Crohn_data -  organize
-( ) REFSIM_qPCR_SCENARIO - 
-( ) REFSIM_NO_OVERDISPERSION_SCENARIOS
-( ) REFSIM_NoCompositionality_Scenario
-( ) REFSIM_GenerateSettings_Index
+(V) REF_SIM_preprocess_Crohn_data -  organize
+(V) REFSIM_GUT_SCENARIO - 
+(V) REFSIM_NO_OVERDISPERSION_SCENARIOS
+(V) REFSIM_NoCompositionality_Scenario
+(v) REFSIM_GenerateSettings_Index
 
 ( ) REFSIM_SingleScenario
 ( ) REFSIM_MultipleScenario_batch

@@ -1,8 +1,12 @@
+#This file is used for building generator (definition objects) for the scenarios based on resampling from real data.
+
+
 library(vegan)
 load(paste0('Gut_Flow_data.RData')) #=> Gut_Flow_data
-
+#Scenario object name
 REFSIM_GUT_TYPE_SCENARIO_DEF = 'REFSIM_GUT_TYPE_SCENARIO_DEF'
 
+#select differentially abundant taxa and effect sizes, for simulations.
 select_diff_abundant_10 = sample(1:(ncol(Gut_Flow_data$counts_matrix)),size = 10,replace = F)
 select_diff_abundant_scalar_10 = sample(c(0.5,1,1.5),size = 10,replace = T)
 
@@ -10,17 +14,18 @@ select_diff_abundant_100 = sample(1:(ncol(Gut_Flow_data$counts_matrix)),size = 1
 select_diff_abundant_scalar_100 = sample(c(0.5,1,1.5),size = 100,replace = T)
 
 #generate frequencies
-REFSIM_generate_Gut_TYPE_Scenario = function(label = "MISSING_LABEL",
-                               m_diff_abundant = 10,
-                               effect_relative_to_total_sample  = 0.05,
-                               n0 = 200,
+REFSIM_generate_Gut_TYPE_Scenario = function(label = "MISSING_LABEL", #label for scenario
+                               m_diff_abundant = 10,# number of diff. abundent taxa
+                               effect_relative_to_total_sample  = 0.05, #effect size, over all taxa, in ratio to microbial load
+                               n0 = 200, #number of samples, in each group
                                n1 = 200,
-                               poisson_mean_reads = 100000,
-                               global_NULL = F,
-                               Const_Size_Variant = F,
-                               Const_Size_Effect_Multiplier = 2,
+                               poisson_mean_reads = 100000, # mean number of reads, for observations
+                               global_NULL = F,#is it a global null scenario
+                               Const_Size_Variant = F, #for a variant with some taxa going up and some going down, but for null taxa, marginal distribtuions are the same
+                               Const_Size_Effect_Multiplier = 2, # Parameters for Const size variant - not used in simulations 
                                Percent_to_add = 0.5
                                ){
+  #Pack scenario definitions into a list object
   m = ncol(Gut_Flow_data$counts_matrix)
   select_diff_abundant = 0
   select_diff_abundant_scalar = 1
@@ -31,7 +36,7 @@ REFSIM_generate_Gut_TYPE_Scenario = function(label = "MISSING_LABEL",
     }else if (m_diff_abundant == 100){
       select_diff_abundant = select_diff_abundant_100
       select_diff_abundant_scalar = select_diff_abundant_scalar_100
-    }else{
+    }else{# we don
       select_diff_abundant = select_diff_abundant_100
       select_diff_abundant_scalar = select_diff_abundant_scalar_100
     }
@@ -40,7 +45,7 @@ REFSIM_generate_Gut_TYPE_Scenario = function(label = "MISSING_LABEL",
   
   
   
-  #USed only in const siZe variant
+  #Used only in const size variant
   index_in_selected_for_reducing = sample(x = 1:length(select_diff_abundant),size = ceiling(length(select_diff_abundant)/2),replace = F)
   
   
@@ -63,16 +68,16 @@ REFSIM_generate_Gut_TYPE_Scenario = function(label = "MISSING_LABEL",
   return(ret)
 }
 
-
+#function for generating data, based on gut scenario definition
 REFSIM_generate_data_for_Gut_Type_Scenario = function(setting_def){
     
   if(class(setting_def) != REFSIM_GUT_TYPE_SCENARIO_DEF){
     stop("Invalid class object used for generation")
   }
-  
+  #get data from stored object
   OTU_Counts = Gut_Flow_data$counts_matrix
   Flow_counts = Gut_Flow_data$Flow_counts
-  
+  # get parameters from scenario definition
   label = setting_def$label
   m = setting_def$m
   m_diff_abundant = setting_def$m_diff_abundant
@@ -89,29 +94,33 @@ REFSIM_generate_data_for_Gut_Type_Scenario = function(setting_def){
   select_diff_abundant_scalar = setting_def$select_diff_abundant_scalar
   Percent_to_add = setting_def$Percent_to_add
   
+  # allocate memory for returned types
   X_unsampled = matrix(NA,nrow = setting_def$n0 + setting_def$n1,ncol = setting_def$m)
   X = matrix(NA,nrow = setting_def$n0 + setting_def$n1,ncol = setting_def$m)
   Y = c(rep(0,setting_def$n0),rep(1,setting_def$n1))  
   Total_Original_Counts = rep(NA,length(Y))
   
+  #generate, sample by sample
   for(i in 1:nrow(X)){
-    
+    #take a base line of counts from the real data, used for modeling overdispersion in counts
     sampled_ind = sample(1:nrow(OTU_Counts),size = 1)
     temp_row = as.numeric(OTU_Counts[sampled_ind,])
     
     
     Flow_counts_in_sample = Flow_counts[sampled_ind]
-    X_unsampled[i,] = Flow_counts_in_sample * temp_row/sum(temp_row)
+    #generate unknown total abundance
+    X_unsampled[i,] = Flow_counts_in_sample * temp_row/sum(temp_row) 
     
-    
+    #if in group 1 , insert signal
     if(Y[i] == 1){
       if(!Const_Size_Variant){
+        # for each differentially abundant taxon, increase by an effect size defined in the paper
         for(s in 1:length(select_diff_abundant)){
           lambda_for_effect = effect_relative_to_total_sample * Flow_counts_in_sample* select_diff_abundant_scalar[s]*rbinom(1,1,Percent_to_add)/length(select_diff_abundant_scalar)
           X_unsampled[i,select_diff_abundant[s]] = X_unsampled[i,select_diff_abundant[s]] + round(rnorm(1,lambda_for_effect,sqrt(lambda_for_effect)))
         }  
       }else{
-        
+        # Const size variant, some go up, some go down - according to scenario definition
         index_for_reducing = select_diff_abundant[index_in_selected_for_reducing]
         index_for_adding = select_diff_abundant[-index_in_selected_for_reducing]
         
@@ -124,14 +133,14 @@ REFSIM_generate_data_for_Gut_Type_Scenario = function(setting_def){
     }
     
     Total_Original_Counts[i] = sum(X_unsampled[i,])
-    counts_to_sample = rpois(1,poisson_mean_reads)
+    counts_to_sample = rpois(1,poisson_mean_reads) #pick the observed sampling depth
     
     prob_vector = X_unsampled[i,]/sum(X_unsampled[i,])
-    X[i,] = rmultinom(1,counts_to_sample , prob = prob_vector)
+    X[i,] = rmultinom(1,counts_to_sample , prob = prob_vector) # Do actual sampling
     
   }
   
-  
+  #Return results
   ret = list()
   ret$X = X
   ret$Y = Y

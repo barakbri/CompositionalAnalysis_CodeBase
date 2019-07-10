@@ -1,3 +1,5 @@
+
+#NEED TO REVISE THIS FILE IN TERM OF INDICES!!
 #graphs for paper
 library(ggplot2)
 
@@ -13,7 +15,7 @@ methods_to_keep = c('ALDEx2_Welch',
 'HG,S = 1.3, Oracle',
 'WILCOXON_PAULSON',
 'WILCOXON_PERCENT',
-'WILCOXON_qPCR',
+'WILCOXON_FLOW',
 'Wrench')
 
 dt = dt[dt$methodlabel %in% methods_to_keep,]

@@ -1,6 +1,15 @@
-#compute pval for global nulls over reference
+
+#This file provides a method for testing the validity of a reference set of taxa
+# - i.e. if there is at least one signal in the selected set of references
+# see paper for method detailes
+# This function is used for producing results in the paper - but has new version in the DACOMP package
+# for further studies - use the function in the DACOMP package
+# X_ref - a matrix of counts, with columns being the taxa selected as reference (and only those!)
+# Y - group labeling - 0 or 1
+# nr.perm - number of permutations for computing P values
 
 compute_GlobalNull_Reference = function(X_ref,Y,nr.perm=1000){
+  #The method is invalid if there is only one dimension
   if(dim(X_ref)[2] == 1){
     ret = list()
     
@@ -17,20 +26,27 @@ compute_GlobalNull_Reference = function(X_ref,Y,nr.perm=1000){
     ret$p.value.permanova_BC = 1
     return(ret)
   }
+  #load packages used for tests
   library(vegan)
   library(HHG)
   library(energy)
+  #pick rarefaction depth
   rarefy_depth = min(as.numeric(apply(X_ref,1,sum)))
   X_ref = vegan::rrarefy(X_ref,rarefy_depth)
+  #compute distance matrices - for different metrics
   print('D Matrices')
   Dx_ref_L2 = as.matrix(dist(X_ref,method = "euclidean", diag = TRUE, upper = TRUE))
   Dx_ref_L1 = as.matrix(dist(X_ref,method = "manhattan", diag = TRUE, upper = TRUE))
   Dx_ref_BC = as.matrix(vegan::vegdist(X_ref,diag = TRUE, upper = TRUE))
   
+  
   print('Dimensions:')
   print(dim(Dx_ref_L2))
   print(dim(Dx_ref_L1))
   print(dim(Dx_ref_BC))
+  
+  #runs tests
+  
   print('HHG')
   hhg.res.L2 = HHG::hhg.test.k.sample(Dx_ref_L2,Y,nr.threads = 1,nr.perm = nr.perm,perm.stats.wanted = T)
   hhg.res.L1 = HHG::hhg.test.k.sample(Dx_ref_L1,Y,nr.threads = 1,nr.perm = nr.perm,perm.stats.wanted = T)
@@ -51,6 +67,8 @@ compute_GlobalNull_Reference = function(X_ref,Y,nr.perm=1000){
   permanova_L2 = vegan::adonis(dist_obj_L2~Y,permutations = nr.perm)
   permanova_L1 = vegan::adonis(dist_obj_L1~Y,permutations = nr.perm)
   permanova_BC = vegan::adonis(dist_obj_BC~Y,permutations = nr.perm)
+  
+  #return P-values for all variantes - tests and distance metrics
   
   ret = list()
   
