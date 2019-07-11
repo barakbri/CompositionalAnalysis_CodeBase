@@ -13,33 +13,33 @@ Tasks:
 (V) REFSIM_NoCompositionality_Scenario
 (v) REFSIM_GenerateSettings_Index
 
-( ) REFSIM_compute_FDR_random_selection
-( ) REFSIM_compute_FDR_random_selection_batch_script
-( ) REFSIM_Plot_Score_Histo_For_Sims
 
-( ) REFSIM_SingleScenario
-( ) REFSIM_MultipleScenario_batch
-( ) REFSIM_Analyze - organize
-( ) REFSIM_Analyze_Results_Tables
-( ) REFSIM_Analyze_chance_of_bad_taxa - organize
+(V) REFSIM_Plot_Score_Histo_For_Sims
+(V) REFSIM_SingleScenario
+(V) REFSIM_MultipleScenario_batch
+(V) REFSIM_Analyze - organize
+(V) REFSIM_Analyze_Results_Tables
+(V) REFSIM_Analyze_chance_of_bad_taxa - organize
+(V) Readme - packages
+(V) Readme - subzero
 
-( ) RDE_Crohn - organize and document
+#After lunch:
 ( ) RDE_HMP_two_site_comparison - organize
 ( ) RDE_HMP_main - organize
+( ) RDE_Crohn - organize and document
 ( ) RDE_Generate_Latex_tables
 
-- Rerun REFSIM_compute_FDR_random_selection,
-- Rerun        APPENDIX_SIM_ANCOM_NULL_CASES
+( ) REFSIM_compute_FDR_random_selection
+( ) REFSIM_compute_FDR_random_selection_batch_script
 
-
-Readme - packages
-
-Readme - subzero
-
-Readme - main dir
+#Readme - main dir
  description of repo
  desc of dir structure
  desc of main files and order to reproduce
+
+
+- Rerun REFSIM_compute_FDR_random_selection,
+- Rerun        APPENDIX_SIM_ANCOM_NULL_CASES
  
 
 

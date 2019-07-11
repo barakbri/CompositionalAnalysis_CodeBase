@@ -1,21 +1,40 @@
-NR.WORKERS = 7#96
-SCENARIO_ID = 10
+# This is the main simulation script, used for reproducing the results for the simulation in
+# section 4 of the manuscript, along with the results in appendicies A, 
+# and the data used for appendix B.1 (results for appendix B.1 are compiled via 'REFSIM_Analyze_chance_of_bad_taxa')
+# see the read me file on how this script is fitted in the complete pipeline for reproducing results
+
+# This script is for running a single scenario at a time. The following line is commented out,
+# since this file is called by REFSIM_MultipleScenario_batch.R with multiple parameters.
+# To run this file for a single scenario, comment out the following line.
+
+#SCENARIO_ID = 10
+
+#This script was run on a machine with 96 cores. You can change this number
+# if you want to run on a different machine, however results will not be reproducible
+# to the letter.
+
+NR.WORKERS = 96
+
 MAINDIR = './'
-Q_LEVEL = 0.1
+
 
 print(paste0('Start Time:'))
 print(Sys.time())
 
-#Modes
-CORRECTION_TYPE_SUBZERO = 'BH'
-CORRECTION_TYPE_WILCOXON = 'BH'
+#Modes and parameters
 
-MODE_RUN_SIMULATION = T
-MODE_PROCESS_RESULTS = T
-DEBUG = T
-DEBUG.SINGLE.CORE = F
-DISABLE_ANCOM = T
+#Parameters for multiplicity correction
+Q_LEVEL = 0.1
+CORRECTION_TYPE_MULTIPLICITY = 'BH'
 
+
+MODE_RUN_SIMULATION = T # should the simulation be run
+MODE_PROCESS_RESULTS = T #should results from the simulation be proccessed (single core - compute Power , FDR, etc.. across sample repetitions)
+DEBUG = F # used for printing messages, running low number of reps
+DEBUG.SINGLE.CORE = F #run in single core...
+DISABLE_ANCOM = F #ANCOM takes time to run. for debug purposes - you can turn off ANCOM
+
+#Load libraries
 library(dacomp)
 library(foreach)
 library(doParallel)
@@ -27,9 +46,10 @@ library(ALDEx2)
 library(Wrench)
 library(DESeq2)
 
-source(paste0('Wilcoxon_TaxaWise.R'))
+#load additional files used
+source(paste0('Wilcoxon_TaxaWise.R')) #competitor tests
 source(paste0('exactHyperGeometricTest.R'))
-source(paste0('REFSIM_GenerateSettings_Index.R'))
+source(paste0('REFSIM_GenerateSettings_Index.R')) # scenario library
 
 RESULTS_DIR = paste0("../../Results/")
 
@@ -40,13 +60,15 @@ if(DEBUG){
   NR.WORKERS = 7
   REPS_PER_SETTING = 1*NR.WORKERS
 }
-
+# scenarios 22,25 are memory intensive. ALDEx2 could not run 96 instances in parallel, on the C5 amazon machine I used, so i use only half of the cores (so I wouldnt run out of RAM)
 if(SCENARIO_ID %in% c(22:25) & !DEBUG){
   NR.WORKERS = 96/2
   REPS_PER_SETTING = 2*NR.WORKERS
 }
 
 NR_REPS_PER_WORKER = ceiling(REPS_PER_SETTING/NR.WORKERS)
+
+#labels for the different methods
 METHOD_LABEL_ANCOM = "ANCOM"
 METHOD_LABEL_HG = "HG"
 METHOD_LABEL_WILCOXON_NAIVE   = "WILCOXON_NAIVE"
@@ -57,16 +79,18 @@ METHOD_LABEL_ALDEx2_Welch     = "ALDEx2_Welch"
 METHOD_LABEL_ALDEx2_Wilcoxon  = "ALDEx2_Wilcoxon"
 METHOD_LABEL_Wrench  = "Wrench"
 
+#for the DACOMP method, we will have prefixes
 PREFIX_DACOMP_WILCOXON = 'DACOMP,Wilcoxon,'
 PREFIX_DACOMP_WELCH = 'DACOMP,Welch,'
 
 PREFIX_DACOMP_rarefaction = 'rarefaction,'
 PREFIX_DACOMP_division = 'division,'
 
-PS_used = 1
-Use_Median = F
-SET_OF_SCENARIOS_ANCOM_ALL_FEATURES = -1
+PS_used = 1 #psuedo count used
 
+SET_OF_SCENARIOS_ANCOM_ALL_FEATURES = -1 # can be use for running ANCOM with other than the default parameters, see in code below. Currently, not used
+
+#Define the median threshold scores used, along with the oracle methods used. 
 df_selection_method = data.frame(MethodName = NA, is_Oracle = NA, Median_SD_Threshold = NA, All_Oracle = NA, RandomSize = NA, stringsAsFactors = F)
 df_selection_method[1,]                            = c('S = 1.3'          ,F, 1.3,F,NA)
 
@@ -79,30 +103,31 @@ if(!DEBUG){
  df_selection_method[nrow(df_selection_method) +1,] = c('S = 1.4, Oracle'  ,T, 1.4, F,NA)
 }
 
+#Number of methods run
 NR_METHODS = 4*(nrow(df_selection_method)) +11 # 9+2 for ANCOMX3 and other competitor
 NR_METHODS_ROWS = 4*(nrow(df_selection_method)) +11
 
-#auxilary functions
-REFSIM_results_file = function(RESULTS_DIR,SCENARIO_ID){
+#auxilary functions for file names
+REFSIM_results_file = function(RESULTS_DIR,SCENARIO_ID){ #to store results
   return(paste0(RESULTS_DIR,'/REFSIM_results_',SCENARIO_ID,'.RData'))
 }
 
-REFSIM_warnings_file = function(RESULTS_DIR,SCENARIO_ID){
+REFSIM_warnings_file = function(RESULTS_DIR,SCENARIO_ID){ #to give warnings
   return(paste0(RESULTS_DIR,'/REFSIM_warnings_',SCENARIO_ID,'.txt'))
 }
 
-REFSIM_aggregated_results_file = function(RESULTS_DIR,SCENARIO_ID){
+REFSIM_aggregated_results_file = function(RESULTS_DIR,SCENARIO_ID){ # aggregated results, average power, FDR etc...
   return(paste0(RESULTS_DIR,'/REFSIM_aggregated_results_',SCENARIO_ID,'.RData'))
 }
 
-REFSIM_aggregated_results_file_sd = function(RESULTS_DIR,SCENARIO_ID){
+REFSIM_aggregated_results_file_sd = function(RESULTS_DIR,SCENARIO_ID){ # sd of aggregates
   return(paste0(RESULTS_DIR,'/REFSIM_aggregated_results_sd_',SCENARIO_ID,'.RData'))
 }
 
-# function for scenario based worker
+# function for scenario based worker. this is the main function being run
 
 Worker_Function = function(core_nr){
-  library(dacomp)
+  library(dacomp) #load the framework
   library(ancom.R)
   library(phyloseq)
   library(metagenomeSeq)
@@ -112,7 +137,8 @@ Worker_Function = function(core_nr){
   
   source(paste0('Wilcoxon_TaxaWise.R'))
   source(paste0('exactHyperGeometricTest.R'))
-  #source(paste0('../Packages/QMP-master/QMP-master/QMP.R'))
+  
+  #this is the function from the flow cytometry paper. See comment below - they had a round error I had to fix
   rarefy_even_sampling_depth <- function(cnv_corrected_abundance_table, cell_counts_table) 
   {
     try(if(all(row.names(cnv_corrected_abundance_table) == row.names(cell_counts_table))==FALSE) stop("Cnv_corrected_abundance_table and cell_counts_table do not have the same sample-names, Please check!"))
@@ -126,7 +152,11 @@ Worker_Function = function(core_nr){
     rarefied_matrix=matrix(nrow = nrow(cnv_corrected_abundance_table_phyloseq), ncol = ncol(cnv_corrected_abundance_table_phyloseq), dimnames = list(rownames(cnv_corrected_abundance_table_phyloseq), colnames(cnv_corrected_abundance_table_phyloseq)))
     for (i in 1:nrow(cnv_corrected_abundance_table_phyloseq))
     {
-      #need to document the -1 here
+      # the rarefaction depth is taken to be minues one counts (a single sequence) from the one they set.
+      # It seems they have a rounding error and you can get a set of number were they try to rarefy
+      # one of the samples to a bigger number of reads than it has (at most one read bigger,
+      # due to rounding)
+      # The "minus one" fixes that
       x <- rarefy_even_depth(cnv_corrected_abundance_table_phyloseq[i,], sample.size = rarefy_to[i]-1, rngseed = FALSE, replace = FALSE, trimOTUs = F, verbose = FALSE)
       rarefied_matrix[i,] = x
     }
@@ -135,6 +165,7 @@ Worker_Function = function(core_nr){
     return(QMP)
   }
   
+  #data structure for results
   current_row = 1
   RESULTS_LENGTH = NR_REPS_PER_WORKER*NR_METHODS_ROWS
   results = data.frame(setting_id = rep(NA,RESULTS_LENGTH),
@@ -142,28 +173,31 @@ Worker_Function = function(core_nr){
                        rejected = rep(NA,RESULTS_LENGTH),
                        tp = rep(NA,RESULTS_LENGTH),
                        fp = rep(NA,RESULTS_LENGTH),
-                       nr_bad_reference = rep(NA,RESULTS_LENGTH)
+                       nr_bad_reference = rep(NA,RESULTS_LENGTH) #relevant only for DACOMP
                        )
   
-  for(b in 1:NR_REPS_PER_WORKER){
+  for(b in 1:NR_REPS_PER_WORKER){ #for each repetition, in the current scenario:
     
     if(DEBUG)
       cat(paste0('Case ',b,' out of ',NR_REPS_PER_WORKER,'\n\r'))
+    #generate data:
     current_setting_generator = REFSIM_SETTINGS_LIST[[SCENARIO_ID]]
     data = REFSIM_generate_setting_wrapper(current_setting_generator)
     
-    for(m in 1: nrow(df_selection_method)){
+    #run our methods, with both Welch and Wilcoxon tests, and all reference selections methods:
+    for(m in 1: nrow(df_selection_method)){ 
       if(DEBUG)
         cat(paste0('Method ',m,' out of ',NR_METHODS,'\n\r'))
       
+      # get reference selection method details:
       
-      #MethodName = NA, is_Oracle = NA, target_prevalence = NA, Min_Prev = NA, All_Oracle = NA, RandomSize = NA
       ref_select_method_Label             = df_selection_method$MethodName[m]
       ref_select_method_Median_SD_Threshold  = as.numeric(df_selection_method$Median_SD_Threshold[m])
       ref_select_method_is_Oracle         = as.logical(df_selection_method$is_Oracle[m])
       ref_select_method_All_Oracle        = as.logical(df_selection_method$All_Oracle[m])
       ref_select_method_RandomSize        = as.numeric(df_selection_method$RandomSize[m])
       
+      # either select references, or for an oracle method, select with oracle knowledge
       Real_Nulls = (1:(dim(data$X)[2]))
       if(length(data$select_diff_abundant) >0 & length(which(data$select_diff_abundant == 0))==0)
         Real_Nulls = (1:(dim(data$X)[2]))[-data$select_diff_abundant]
@@ -189,6 +223,8 @@ Worker_Function = function(core_nr){
         Selected_References = ref_select$selected_references
                                                       
       }
+      
+      # run both wilcoxon and welch tests
       res_wilcoxon = dacomp.test(X = data$X,
                                  y = data$Y,
                                  ind_reference_taxa = Selected_References,
@@ -203,10 +239,12 @@ Worker_Function = function(core_nr){
                                  q = Q_LEVEL,
                                  nr_perm = 1/(Q_LEVEL/(ncol(data$X))),compute_ratio_normalization = T,verbose = DEBUG.SINGLE.CORE)
       
+      #number of diff.abun. taxa that have entered the reference set by error
       bad_select = length(which(ref_select$selected_references %in% data$select_diff_abundant))
       
+      #auxiliary function for wrapping the results
       construct_results_row = function(p.values.test,ref_select_method_Label){
-        rejected = which(p.adjust(p.values.test,method = CORRECTION_TYPE_SUBZERO) <= Q_LEVEL) #pvals
+        rejected = which(p.adjust(p.values.test,method = CORRECTION_TYPE_MULTIPLICITY) <= Q_LEVEL) #pvals
         true_positive = length(which(rejected %in% data$select_diff_abundant))
         false_positive = length(rejected) - true_positive
         ret = c(SCENARIO_ID,
@@ -218,6 +256,7 @@ Worker_Function = function(core_nr){
         return(ret)
       }
       
+      #docuemnt our results for wilcoxon/Welch, and for subsampling/ normalization by ratio.
       results[current_row,] = construct_results_row(res_wilcoxon$p.values.test ,
                                                     paste0(PREFIX_DACOMP_WILCOXON,PREFIX_DACOMP_rarefaction,ref_select_method_Label)
                                                     ); current_row = current_row + 1
@@ -234,12 +273,10 @@ Worker_Function = function(core_nr){
                                                     paste0(PREFIX_DACOMP_WELCH,PREFIX_DACOMP_division,ref_select_method_Label)
                                                     ); current_row = current_row + 1
       
-      # results[current_row,] = c(SCENARIO_ID,ref_select_method_Label,length(rejected),true_positive,
-      #                           false_positive, bad_select) ; current_row = current_row + 1
-      # 
-      
+
+      #run variant with hypergeometric test. Only valid if there is now over dispersion of counts      
       res_HG = exactHyperGeometricTest(data$X,data$Y,Selected_References)
-      rejected = which(p.adjust(res_HG,method = CORRECTION_TYPE_SUBZERO) <= Q_LEVEL) #pvals
+      rejected = which(p.adjust(res_HG,method = CORRECTION_TYPE_MULTIPLICITY) <= Q_LEVEL) #pvals
       true_positive = length(which(rejected %in% data$select_diff_abundant))
       false_positive = length(rejected) - true_positive
       results[current_row,] = c(SCENARIO_ID,paste0(METHOD_LABEL_HG,',', ref_select_method_Label),length(rejected),true_positive,
@@ -248,29 +285,33 @@ Worker_Function = function(core_nr){
       
     }# end of loop over methods
     
+    #run marginal wilcoxon tests
     if(DEBUG)
       cat(paste0('Computing Wilcoxon \n\r'))
     
+    #with out normalization
     res = wilcoxon_taxa_wise(data$X,data$Y)
-    rejected = which(p.adjust(res$p.values,method = CORRECTION_TYPE_WILCOXON) <= Q_LEVEL)
+    rejected = which(p.adjust(res$p.values,method = CORRECTION_TYPE_MULTIPLICITY) <= Q_LEVEL)
     true_positive = length(which(rejected %in% data$select_diff_abundant))
     false_positive = length(rejected) - true_positive
     results[current_row,] = c(SCENARIO_ID,METHOD_LABEL_WILCOXON_NAIVE,length(rejected),true_positive,false_positive,0) ; current_row = current_row + 1
     
+    #TSS normalization
     res = wilcoxon_taxa_wise(data$X,data$Y,normalize = T,normalize.P = 1)
-    rejected = which(p.adjust(res$p.values,method = CORRECTION_TYPE_WILCOXON) <= Q_LEVEL)
+    rejected = which(p.adjust(res$p.values,method = CORRECTION_TYPE_MULTIPLICITY) <= Q_LEVEL)
     true_positive = length(which(rejected %in% data$select_diff_abundant))
     false_positive = length(rejected) - true_positive
     results[current_row,] = c(SCENARIO_ID,METHOD_LABEL_WILCOXON_PERCENT,length(rejected),true_positive,false_positive,0) ; current_row = current_row + 1
     
+    #CSS normalization
     CSS_normalized = t(cumNormMat(t(data$X)))
     res = wilcoxon_taxa_wise(CSS_normalized,data$Y,normalize = F)
-    rejected = which(p.adjust(res$p.values,method = CORRECTION_TYPE_WILCOXON) <= Q_LEVEL)
+    rejected = which(p.adjust(res$p.values,method = CORRECTION_TYPE_MULTIPLICITY) <= Q_LEVEL)
     true_positive = length(which(rejected %in% data$select_diff_abundant))
     false_positive = length(rejected) - true_positive
     results[current_row,] = c(SCENARIO_ID,METHOD_LABEL_WILCOXON_PAULSON,length(rejected),true_positive,false_positive,0) ; current_row = current_row + 1
     
-    
+    # for scenarios with simulated flow cytometry- run van de putte method
     if(class(current_setting_generator) %in% c(REFSIM_GUT_TYPE_SCENARIO_DEF) & "Total_Original_Counts" %in% names(data)){
       
       
@@ -284,13 +325,13 @@ Worker_Function = function(core_nr){
       X_corrected = rarefy_even_sampling_depth(X_corrected, Average_Cell_Count_matrix)
       
       res = wilcoxon_taxa_wise(X_corrected,data$Y)
-      rejected = which(p.adjust(res$p.values,method = CORRECTION_TYPE_WILCOXON) <= Q_LEVEL)
+      rejected = which(p.adjust(res$p.values,method = CORRECTION_TYPE_MULTIPLICITY) <= Q_LEVEL)
       true_positive = length(which(rejected %in% data$select_diff_abundant))
       false_positive = length(rejected) - true_positive
       results[current_row,] = c(SCENARIO_ID,METHOD_LABEL_WILCOXON_FLOW,length(rejected),true_positive,false_positive,0) ; current_row = current_row + 1
     }
     
-        
+    #run ANCOM, if required    
     if(DEBUG)
       cat(paste0('Computing ANCOM \n\r'))
     
@@ -298,8 +339,9 @@ Worker_Function = function(core_nr){
     mat[,ncol(mat) + 1] =  as.factor(data$Y)
     names(mat) = c(1:ncol(data$X),'Y')
     if(!DISABLE_ANCOM){
-      for(ai in 1:3){
-        if(ai == 3 | SCENARIO_ID %in% SET_OF_SCENARIOS_ANCOM_ALL_FEATURES){
+      for(ai in 1:3){ #iterate over ANCOM parameters
+        #run ANCOM with the default parameter, or if it is a scenario that requries checking all configurations
+        if(ai == 3 | SCENARIO_ID %in% SET_OF_SCENARIOS_ANCOM_ALL_FEATURES){ 
           ancom.out <- ANCOM(mat, sig = Q_LEVEL, multcorr = ai, repeated=FALSE)
           ANCOM_Rejected = ancom.out$detected
           for(i in 1:length(ANCOM_Rejected)){
@@ -319,20 +361,22 @@ Worker_Function = function(core_nr){
       results[current_row,] = c(SCENARIO_ID,METHOD_LABEL_ANCOM,-1,-1,-1,-1) ; current_row = current_row + 1  
     }
     
-    #ALDEx2 (note that we alter the data object here):
-    indicies_not_empty = which(apply(data$X>0,2,sum)>0)
+    #ALDEx2 (note that we alter the data object here, we remove taxa which are empty, and keep track of how the inices chagned for computing Power and FDR):
+    indicies_not_empty = which(apply(data$X>0,2,sum)>0) # to keep
     m_original = ncol(data$X)
     flags_H1 = rep(0,m_original)
     flags_H1[data$select_diff_abundant] = 1
     flags_H1 = flags_H1[indicies_not_empty]
-    data$X = data$X[,indicies_not_empty]
-    data$select_diff_abundant = which(flags_H1==1)
+    data$X = data$X[,indicies_not_empty] # keep only relevant columns
+    data$select_diff_abundant = which(flags_H1==1) #the vector of indices of diff.abun. taxa, under the new indexing
     
+    #run iqlr normalizaed aldex 2
     aldex.res.iqlr <- aldex(t(data$X), as.character(data$Y), mc.samples=128, denom="iqlr",
                             test="t", effect=FALSE,verbose = DEBUG.SINGLE.CORE)
     
-    rejected.iqlr.wi = p.adjust(aldex.res.iqlr$wi.ep, method = CORRECTION_TYPE_SUBZERO) <= Q_LEVEL
-    rejected.iqlr.we = p.adjust(aldex.res.iqlr$we.ep, method = CORRECTION_TYPE_SUBZERO) <= Q_LEVEL
+    # record both wilcoxon and welch variants
+    rejected.iqlr.wi = p.adjust(aldex.res.iqlr$wi.ep, method = CORRECTION_TYPE_MULTIPLICITY) <= Q_LEVEL
+    rejected.iqlr.we = p.adjust(aldex.res.iqlr$we.ep, method = CORRECTION_TYPE_MULTIPLICITY) <= Q_LEVEL
     
     ALDEx2.Nr.Rejected.Wi = sum(rejected.iqlr.wi)
     ALDEx2.Nr.Rejected.We = sum(rejected.iqlr.we)
@@ -345,11 +389,11 @@ Worker_Function = function(core_nr){
     results[current_row,] = c(SCENARIO_ID,METHOD_LABEL_ALDEx2_Welch, ALDEx2.Nr.Rejected.We, ALDEx2.Nr.TP.We ,ALDEx2.Nr.FP.We,0) ; current_row = current_row + 1
     
     #Wrench - note that we removed otus with zeroes before
-    W <- wrench( t(data$X), condition=data$Y  )
+    W <- wrench( t(data$X), condition=data$Y  ) #normalize. Note that this function throws off warnings if the scenario is too sparse..
     compositionalFactors <- W$ccf
     normalizationFactors <- W$nf
     
-    library(DESeq2)
+    library(DESeq2) #test via deseq 2.
     deseq.obj <- DESeq2::DESeqDataSetFromMatrix(countData = t(data$X),
                                                 DataFrame(Y = factor(data$Y)),
                                                 ~ Y )
@@ -358,7 +402,7 @@ Worker_Function = function(core_nr){
     deseq2_res2 = results(deseq2_res)
     
     
-    wrench_rejected = which(p.adjust(deseq2_res2$pvalue,method = CORRECTION_TYPE_SUBZERO) <= Q_LEVEL)
+    wrench_rejected = which(p.adjust(deseq2_res2$pvalue,method = CORRECTION_TYPE_MULTIPLICITY) <= Q_LEVEL)
     wrench_nr_rejected = length(wrench_rejected)
     wrench_nr_tp = sum(wrench_rejected%in% data$select_diff_abundant)
     wrench_nr_fp = wrench_nr_rejected - wrench_nr_tp
@@ -372,28 +416,29 @@ Worker_Function = function(core_nr){
   return(return_object)
 } # End of worker function
 
-#Tester for worker function
-if(F){
-  results_demo = Worker_Function(1)
-  results_demo$results
-  
-  hist(results_demo$lambda_selected_list[[1]])
-}
+#Code snippet for testing the worker function
+# if(F){
+#   results_demo = Worker_Function(1)
+#   results_demo$results
+#   
+#   hist(results_demo$lambda_selected_list[[1]])
+# }
 
+#if needed to run simulation, handle:
 if(MODE_RUN_SIMULATION){
   cat(paste0('Running simulation for scenario ID ',SCENARIO_ID,'\n\r'))
   Start = Sys.time()
   res=NULL
   rm(res)
   res=NULL
-  if(!DEBUG.SINGLE.CORE){
+  if(!DEBUG.SINGLE.CORE){ #run on multiple cores
     cat(paste0(' Using multiple cores \n\r'))
     cl = makeCluster(NR.WORKERS)
     registerDoParallel(cl)
     res = foreach(core = 1:NR.WORKERS, .options.RNG = RNG_SEED) %dorng% {Worker_Function(core)} #.options.RNG=c(1:NR.WORKERS) #%dorng%
     stopCluster(cl)
     cat(paste0(' Run done \n\r'))
-  }else{
+  }else{ #run on single core, can see warnings and debug 
     cat(paste0(' Using single core \n\r'))
     res = list()
     for(core in 1:NR.WORKERS){
@@ -408,7 +453,7 @@ if(MODE_RUN_SIMULATION){
   End = Sys.time()
   cat(paste0(' Total time for setting: \n\r'))
   print(End-Start)
-  
+  #save results from this scenario (with all repetitions) to file
   filename = REFSIM_results_file(RESULTS_DIR,SCENARIO_ID)
   save(res,file = filename)
 }
@@ -417,7 +462,9 @@ sink(file = REFSIM_warnings_file(RESULTS_DIR,SCENARIO_ID))
 warnings()
 sink()
 
+#process results if needed
 if(MODE_PROCESS_RESULTS){
+  #combine results across all cores
   cat(paste0('Combining results for scenario ',SCENARIO_ID,' \n\r'))
   filename = REFSIM_results_file(RESULTS_DIR,SCENARIO_ID)
   load(file = filename) #=> res
@@ -433,6 +480,7 @@ if(MODE_PROCESS_RESULTS){
   combined_results$setting_id = as.numeric(combined_results$setting_id)
   combined_results$nr_bad_reference = as.numeric(combined_results$nr_bad_reference)
   
+  # compute mean number of rejections, fdr across scenarios. Also compute the SD of population values (not SEs, need to divide by sqrt(reps) for final answer)
   rejected_for_fdr = combined_results$rejected
   if(length(which(rejected_for_fdr==0))>0)
     rejected_for_fdr[rejected_for_fdr==0] = 1
