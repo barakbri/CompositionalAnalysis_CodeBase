@@ -1,3 +1,9 @@
+# This script is used to analyze the HMP data set.
+# script iterativaly calls RDE_HMP_two_site_comparison.R with different paris of body sites (from the same region)
+# based on the partitioning found below.
+# The script makes sure to load the data (which takes time) only for the first pairwise comparison.
+# The second part of the scripts load the results from all analyzes and outputs the results
+
 
 Valid_Body_Sites = c(
   "Stool",
@@ -24,19 +30,17 @@ Valid_Body_Sites = c(
   
 )
 
-
+# code region for each body type
 region = c(1,rep(2,9),rep(3,5),rep(4,3))
 
-# length(Valid_Body_Sites); choose(length(Valid_Body_Sites),2)
-# choose(9,2) + choose(5,2) + choose(3,2)
 
-MODE_RUN = T
-MODE_ANALYZE = T
-START_FROM = 3
-START_FROM_SITE_2 = 6
-DATA_LOADED = F
+MODE_RUN = T #run pairwise comparisons
+MODE_ANALYZE = T # should results be aggregated to a single file
+START_FROM = 1 #set the starting points for the double loops
+START_FROM_SITE_2 = 2
+DATA_LOADED = F #has the data been loaded yet
 
-
+# Run all pairwise comparisons
 if(MODE_RUN){
   for(site1 in START_FROM:(length(Valid_Body_Sites)-1)){
     min_val_site2 = (site1+1)
@@ -54,7 +58,7 @@ if(MODE_RUN){
       
       Y0 = Valid_Body_Sites[site1]
       Y1 = Valid_Body_Sites[site2]
-      if(DATA_LOADED){
+      if(DATA_LOADED){ # no need to load the data after the first time
         LOAD_DATA = F
       }else{
         LOAD_DATA = T
@@ -62,7 +66,7 @@ if(MODE_RUN){
       
       source('RDE_HMP_two_site_comparison.R', echo=FALSE)
       
-      DATA_LOADED = T
+      DATA_LOADED = T # data has been loaded, keep track for the next iteration
       
       End_time  = Sys.time()
       cat(paste0('Total time for two-site comparison: '))
@@ -71,50 +75,47 @@ if(MODE_RUN){
   }
 }
 
-# 
-# util_name_from_bodysite = function(X){
-#   return(strsplit(X,'UBERON:')[[1]][2])
-# }
-
-
+# aggregate all results to a single file
 if(MODE_ANALYZE){
   
   row_pointer = 1
   nr_rows_in_results = choose(length(Valid_Body_Sites),2)
-  dt_results = data.frame(Same_Region = rep(NA,nr_rows_in_results),
-                          Site1 = rep(NA,nr_rows_in_results), Site2 = rep(NA,nr_rows_in_results),
-                              nr_subjects = rep(NA,nr_rows_in_results), taxa_for_test = rep(NA,nr_rows_in_results),
-                              Nr_Wilcoxon_Rejections = rep(NA,nr_rows_in_results),
-                              Nr_Wilcoxon_Rejections_Normalized = rep(NA,nr_rows_in_results),
-                              Nr_Wilcoxon_Rejections_Normalized_CSS = rep(NA,nr_rows_in_results),
-                              ANCOM_rejections= rep(NA,nr_rows_in_results), 
-                              ref_size_selected = rep(NA,nr_rows_in_results),
-                              rejections = rep(NA,nr_rows_in_results),
-                              shared = rep(NA,nr_rows_in_results),
-                              median_lambda = rep(NA,nr_rows_in_results),
-                              subset_disc = rep(NA,nr_rows_in_results),
-                              rejections_division = rep(NA,nr_rows_in_results),
-                              rejections_Welch = rep(NA,nr_rows_in_results),
-                              rejections_division_Welch = rep(NA,nr_rows_in_results),
-                              ALDEx2_Wilcoxon = rep(NA,nr_rows_in_results),
+  #prepare data structure for results
+  dt_results = data.frame(Same_Region = rep(NA,nr_rows_in_results), #indicator of two sites are in the same region
+                          Site1 = rep(NA,nr_rows_in_results), Site2 = rep(NA,nr_rows_in_results), #names of sites
+                              nr_subjects = rep(NA,nr_rows_in_results), taxa_for_test = rep(NA,nr_rows_in_results), #number of subjects and taxa for testing
+                              Nr_Wilcoxon_Rejections = rep(NA,nr_rows_in_results), #number of rejection for unnormalized wilcoxon
+                              Nr_Wilcoxon_Rejections_Normalized = rep(NA,nr_rows_in_results), #W-TSS
+                              Nr_Wilcoxon_Rejections_Normalized_CSS = rep(NA,nr_rows_in_results), #W-CSS
+                              ANCOM_rejections= rep(NA,nr_rows_in_results),  #number of rejections for ANCOM
+                              ref_size_selected = rep(NA,nr_rows_in_results), #size of reference set selected, in number of taxa
+                              rejections = rep(NA,nr_rows_in_results), #number of rejections by dacomp, with wilcoxon and subsampling
+                              shared = rep(NA,nr_rows_in_results), #number of rejections DACOMP shared with ANCOM
+                              median_lambda = rep(NA,nr_rows_in_results), #median lambda, across tested taxa
+                              subset_disc = rep(NA,nr_rows_in_results), #number of discoveries for DACOMP, when using only 2/3 of the data (picked at random)
+                              rejections_division = rep(NA,nr_rows_in_results), #number of discoveries, for DACOMP with Wilcoxon and normalization by division
+                              rejections_Welch = rep(NA,nr_rows_in_results),  #number of discoveries, for DACOMP with Welch t test
+                              rejections_division_Welch = rep(NA,nr_rows_in_results),#number of discoveries, for DACOMP with Welch t test and normalization by division
+                              ALDEx2_Wilcoxon = rep(NA,nr_rows_in_results), #number of disceveries for ALDEx2 - two variants
                               ALDEx2_Welch = rep(NA,nr_rows_in_results),
-                              Wrench = rep(NA,nr_rows_in_results),
-                              shared_ALDEx2_Wilcoxon = rep(NA,nr_rows_in_results),
+                              Wrench = rep(NA,nr_rows_in_results), #number of discoveries for Wrench, with DESEQ2 tests
+                              shared_ALDEx2_Wilcoxon = rep(NA,nr_rows_in_results), #number of discoveries shared between DACOMP (wilcoxon, rarefaction) and ALDEx2/ Wrench
                               shared_ALDEx2_Welch = rep(NA,nr_rows_in_results),
                               shared_Wrench = rep(NA,nr_rows_in_results)
                               )
-  
+  # iterate over pairs of body sites
   for(site1 in 1:(length(Valid_Body_Sites)-1)){
     for(site2 in (site1+1):length(Valid_Body_Sites)){
       if(region[site1]!=region[site2])
         next
-      
+      #load results
       Y0 = Valid_Body_Sites[site1]
       Y1 = Valid_Body_Sites[site2]
       results_save_file = paste0(HMP_RESULTS_DIR,"RESULTS_FILE_",(Y0),"_",(Y1),'.Rdata')    
       load(file = results_save_file)
       ref_size_selected = length(results_to_save$selected_references_obj$selected_references)
       
+      #compute entries of the above table
       nr_vanilla_shared       = 0
       nr_vanilla_unique       = 0
       nr_vanilla_unique_ANCOM = 0
@@ -140,15 +141,7 @@ if(MODE_ANALYZE){
       if(region[site1] == region[site2])
         same_region = 1
      
-      
-      length(results_to_save$rejected_by_pval)
-      length(results_to_save$rejected_by_pval_division)
-      length(results_to_save$rejected_by_pval_Welch)
-      length(results_to_save$rejected_by_pval_division_Welch)
-      length(results_to_save$rejected.iqlr.wi)
-      length(results_to_save$rejected.iqlr.we)
-      length(results_to_save$wrench_rejected)
-      
+      #collect the row to insert
       row_to_insert = c(same_region,(Y0),(Y1),
                         results_to_save$`dim(X)`[1],results_to_save$`dim(X_2)`[2],
                         nr_Wilcoxon_rejections,
@@ -175,8 +168,7 @@ if(MODE_ANALYZE){
       row_pointer = row_pointer + 1
     }
   }
-  
-  
+  #write to file
   write.csv(dt_results[1:(row_pointer-1),],file = paste0('../../Results/HMP/results.csv'),quote = F,row.names = F)
   
 }

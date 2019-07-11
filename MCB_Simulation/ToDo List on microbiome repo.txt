@@ -13,7 +13,6 @@ Tasks:
 (V) REFSIM_NoCompositionality_Scenario
 (v) REFSIM_GenerateSettings_Index
 
-
 (V) REFSIM_Plot_Score_Histo_For_Sims
 (V) REFSIM_SingleScenario
 (V) REFSIM_MultipleScenario_batch
@@ -24,8 +23,8 @@ Tasks:
 (V) Readme - subzero
 
 #After lunch:
-( ) RDE_HMP_two_site_comparison - organize
-( ) RDE_HMP_main - organize
+(V) RDE_HMP_two_site_comparison - organize
+(V) RDE_HMP_main - organize
 ( ) RDE_Crohn - organize and document
 ( ) RDE_Generate_Latex_tables
 
@@ -37,9 +36,15 @@ Tasks:
  desc of dir structure
  desc of main files and order to reproduce
 
-
-- Rerun REFSIM_compute_FDR_random_selection,
-- Rerun        APPENDIX_SIM_ANCOM_NULL_CASES
+- Rerun REFSIM_compute_FDR_random_selection - after correction - RVP and naive random selection
+- Rerun APPENDIX_SIM_ANCOM_NULL_CASES
+- Rerun Crohn - 
+- Rerun HMP - 
+- Rerun SIMS - 
+  Update script for producing graphs and results
+  Put results in section 4 and appendix A
+  Put results in chance to select bad taxa
+  
  
 
 
