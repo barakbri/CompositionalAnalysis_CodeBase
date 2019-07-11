@@ -155,8 +155,6 @@ Worker_Function = function(core_nr){
   return(return_object)
 } # End of worker function
 
-#stop('Stopping!')
-
 if(MODE_RUN_SIMULATION){
   cat(paste0('Running simulation for scenario ID ',SCENARIO_ID,'\n\r'))
   Start = Sys.time()

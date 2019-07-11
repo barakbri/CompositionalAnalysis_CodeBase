@@ -249,7 +249,7 @@ write.csv(res_matrix,file = '../../Results/Gut_Data_Results.csv',row.names =F)
 
 
 
-
+# a list, containing the vecotrs of indices of discoveries, by method
 disc_list = list(
 disc_vec_ANCOM = which(colnames(ANCOM_otu_dat)%in% ANCOM_default_res$detected),
 disc_Wilcoxon_corrected = disc_Wilcoxon_corrected ,
@@ -261,6 +261,7 @@ disc_ALDEx2_iqlr_We = which(aldex.res.iqlr$we.eBH <= Q_LEVEL),
 disc_Wrench = which(deseq2_res2$padj <= Q_LEVEL)
 )
 
+#compute a matrix of shared discoveries. Diagonal entries are the number of discoveries of each method
 method_names = c('ANCOM','WIL-FLOW','WIL-CSS','WIL-TSS','DACOMP','ALDEx2-W','ALDEx2-t','Wrench')
 shared_disc_mat = matrix(NA,nrow = length(method_names),ncol = length(method_names))
 rownames(shared_disc_mat) = method_names
@@ -271,11 +272,11 @@ for(i in 1:length(method_names)){
   }
 }
 
+#write to file
 write.csv(shared_disc_mat,file = '../../Results/gut_cell_shared_disc_mat.csv')
 
 
-#Plot, compare large taxa
-
+#Plot, compare large taxa, small taxa, and different subsets of methods
 ind_to_prevalent = which(apply(X,2,mean)>=10)
 
 
@@ -332,13 +333,7 @@ is_rejected = is_rejected[,(which(apply(is_rejected,2,sum)>0))]
 ord = order(apply(is_rejected,2,sum),decreasing = T)
 is_rejected = is_rejected[,ord]
 
-dim(is_rejected)
-#image(t(is_rejected))
-
-library(reshape2)
-melted_is_rejected = melt(data.frame(Method=rownames(is_rejected), is_rejected), id.vars="Method")
-
-
+#an additional plot showing shared taxa
 library(yarrr)
 pallete = yarrr::piratepal("basel",
                  plot.result = FALSE,
@@ -352,7 +347,7 @@ plot(c(-80, ncol(is_rejected)), c(0, 8), type = "n", xlab = "", ylab = "",
 reorder_vec = c(3,1,4,2,5,6,7,8)
 for(i in 1:8){
   p = which(is_rejected[reorder_vec[i],]==1)
-  rect(xleft = p-1,xright = p,ybottom = i-1,ytop = i,col = pallete[i],border = NA)  #rainbow(n=8)
+  rect(xleft = p-1,xright = p,ybottom = i-1,ytop = i,col = pallete[i],border = NA)  
   text(x=-50,y= i-0.5,labels = names(disc_list_plot)[reorder_vec[i]])
 }
 dev.off()
