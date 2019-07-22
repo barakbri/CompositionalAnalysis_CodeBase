@@ -10,10 +10,10 @@
 #SCENARIO_ID = 10
 
 #This script was run on a machine with 96 cores. You can change this number
-# if you want to run on a different machine, however results will not be reproducible
-# to the letter.
+# if you want to run on a different machine
 
 NR.WORKERS = 96
+NR.CORES = 96
 
 MAINDIR = './'
 
@@ -62,8 +62,7 @@ if(DEBUG){
 }
 # scenarios 22,25 are memory intensive. ALDEx2 could not run 96 instances in parallel, on the C5 amazon machine I used, so i use only half of the cores (so I wouldnt run out of RAM)
 if(SCENARIO_ID %in% c(22:25) & !DEBUG){
-  NR.WORKERS = 96/2
-  REPS_PER_SETTING = 2*NR.WORKERS
+  NR.CORES = 96/2
 }
 
 NR_REPS_PER_WORKER = ceiling(REPS_PER_SETTING/NR.WORKERS)
@@ -433,7 +432,7 @@ if(MODE_RUN_SIMULATION){
   res=NULL
   if(!DEBUG.SINGLE.CORE){ #run on multiple cores
     cat(paste0(' Using multiple cores \n\r'))
-    cl = makeCluster(NR.WORKERS)
+    cl = makeCluster(NR.CORES)
     registerDoParallel(cl)
     res = foreach(core = 1:NR.WORKERS, .options.RNG = RNG_SEED) %dorng% {Worker_Function(core)} #.options.RNG=c(1:NR.WORKERS) #%dorng%
     stopCluster(cl)
