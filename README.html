@@ -191,45 +191,54 @@ $(document).ready(function () {
 <h1>“Testing for differential abundance in compositional counts data, with application to microbiome studies”.</h1>
 <div id="introduction" class="section level2">
 <h2>Introduction</h2>
+<p>This is the repository for reproducing the simulation results, real data analyses and graphs found in the manuscript with the above name <a href="https://arxiv.org/pdf/1904.08937.pdf">arXiv link</a>. The manuscript describes the DACOMP method (<a href="https://github.com/barakbri/dacomp">GitHub link</a>), a non parametric approach for testing differential abundance in compositional counts data. The method aims for detecting differentially abundant taxa in 16S microbiome counts data.</p>
+<p>The structure of the repository is as follows. The ‘packages’ subfolder contains the installation files for packages used for running simulations and data analysis. These packages need to be installed prior to running simualtions and data analyses. The directory contains a list of the statistical methods used from each package, when reproducing results for the paper. See the Installtion section below for further details. The ‘Scripts’ subfolder contains the R scripts for simulation and real data analyses. The ‘Crohn’ folder contains the Crohn Disease dataset analyzed in Section 5 of the manuscript. The ‘HMP’ folder contains the metadata and OTU counts for the samples measured under the Human Microbiome Project. A results folder will be constructed in parallel to the repository directory. This directory will contain all results from real data analyses and simulations.</p>
 </div>
 <div id="installation" class="section level2">
 <h2>Installation</h2>
+<ol style="list-style-type: decimal">
+<li>Begin by downloading the repository and placing it in a directory.</li>
+<li>Open RStudio/R and install the packages found under the ‘packages’ subdirectory.</li>
+<li>Unzip the file HMP/OTU_Counts.zip to its current directory. This file contains the OTU counts in CSV format (obtained from according to the instructions found in the manuscript from the HMP site).</li>
+<li>Open the project file “MCB_Simulation.Rproj” found under scripts in RStudio. All scripts will be run under this project.</li>
+<li>Run the script “Generate_Results_Dir.r”. This script will generate the results directory, where all results will be placed.</li>
+</ol>
 </div>
 <div id="scripts-to-run-for-reproducing-results" class="section level2">
 <h2>Scripts to run for reproducing results</h2>
+<p>The next subsection goes over the scripts that needed to be run to reproduce results from the paper. Scripts that are run by the user will have “RUN TO…” (capitalized) under their description. In Addition, scripts that are run below each subsubsection will have a number (<strong>#1,#2</strong>) at the start of their description to indicate the running order. Scripts called by other scripts,e.g. library scripts, will not have “RUN TO…” at the start of their description.</p>
+<p>The scripts make use of two RData objects of sOTU reads obtained from the deblurr package. The deblurr package is not part of the R codebase, and was called manually using the CLI supplied by the package. See the manuscript on instructions on how and where the data for “deblurring” was obtained.</p>
 <div id="simulation" class="section level3">
 <h3>Simulation</h3>
 <ul>
-<li>REFSIM_MultipleScenario_batch.R</li>
-<li>REFSIM_SingleScenario.R</li>
-<li>REFSIM_Analyze_Results.R</li>
-<li>REFSIM_Analyze_chance_of_bad_taxa.R</li>
-<li>REFSIM_Analyze_Results_Tables.R</li>
-</ul>
-</div>
-<div id="data-analysis-for-the-crohn-study" class="section level3">
-<h3>Data analysis for the crohn study</h3>
-<ul>
-<li>FlowCytometryCounts.csv</li>
-<li>gut_otu_table.RData</li>
-<li>RDE_Crohn.R</li>
-<li>RDE_Generate_Latex_tables.R</li>
+<li><code>REFSIM_MultipleScenario_batch.R</code> - <strong>(#1)</strong> RUN TO perform the simulations desribed under Section 4 of the manuscript, and appendix A (additional simulations). The script performs multiple calls to <code>REFSIM_SingleScenario.R</code>. Note that this script took ~2 days to run on a 96 core Amazon C5 machine. It is not feasible to run this script on a PC.</li>
+<li><code>REFSIM_SingleScenario.R</code> - The script for performing simulations, for a single scenario found in Section 4, for all DACOMP variants and competitors. Saves output to the results directory.</li>
+<li><code>REFSIM_Analyze_Results.R</code>- <strong>(#2)</strong> RUN TO compile results from all scenarios, after running <code>REFSIM_MultipleScenario_batch.R</code>.</li>
+<li><code>REFSIM_Analyze_chance_of_bad_taxa.R</code> - <strong>(#3)</strong> RUN TO generate the table found in appendix B, describing the mean number of differentially abundant taxa that have erronuosly entered the reference set. Script is run after <code>REFSIM_Analyze_Results.R</code>.</li>
+<li><code>REFSIM_Analyze_Results_Tables.R</code> - <strong>(#4)</strong> RUN TO compile graphs and tables for Section 4 and Appendix A, after runnig <code>REFSIM_Analyze_Results.R</code>.</li>
 </ul>
 </div>
 <div id="analyzing-data-from-the-human-microbiome-project" class="section level3">
 <h3>Analyzing data from the Human Microbiome Project</h3>
 <ul>
-<li>“RDE_HMP_main.R”</li>
-<li>“RDE_HMP_two_site_comparison.R”</li>
+<li><code>RDE_HMP_main.R</code> - <strong>(#5)</strong> RUN TO analyze results for the HMP dataset. This script calls <code>RDE_HMP_two_site_comparison.R</code> for each pair of body sites, and then outputs the results to a subdirectory under the results directory. See <code>RDE_Generate_Latex_tables.R</code> for processing outputs of this data example to a lateX table.</li>
+<li><code>RDE_HMP_two_site_comparison.R</code> - Analyze differential abundance of taxa between a pair of body sites. This script is called repeatedly by <code>RDE_HMP_main.R</code>, each time with a different pair of body sites as parameters.</li>
+</ul>
+</div>
+<div id="data-analysis-for-the-crohn-disease-study" class="section level3">
+<h3>Data analysis for the Crohn Disease study</h3>
+<ul>
+<li><code>RDE_Crohn.R</code> - <strong>(#6)</strong> RUN TO analyze the crohn disease dataset.</li>
+<li><code>RDE_Generate_Latex_tables.R</code> - <strong>(#7)</strong> RUN TO compile the tables generated by <code>RDE_HMP_main.R</code> and <code>RDE_Crohn.R</code> to lateX format.</li>
 </ul>
 </div>
 <div id="simulation-results---in-appendicies" class="section level3">
 <h3>Simulation results - in appendicies</h3>
 <ul>
-<li><code>APPENDIX_SIM_ANCOM_NULL_CASES.R</code></li>
-<li><p>GlobalNull_Over_Reference.R</p></li>
-<li>REFSIM_compute_FDR_random_selection.R</li>
-<li><p>REFSIM_compute_FDR_random_selection_batch_script.R</p></li>
+<li><code>APPENDIX_SIM_ANCOM_NULL_CASES.R</code> - <strong>(#8)</strong> RUN TO generate the results found in appendix C - the simulation study for FWER of ANCOM under the global null.</li>
+<li><p><code>GlobalNull_Over_Reference.R</code> - An implementation of the Reference Validation Procedure (RVP) described in Appendix B (subsection B.3.).</p></li>
+<li><code>REFSIM_compute_FDR_random_selection_batch_script.R</code> - <strong>(#9)</strong> RUN TO obtain the results found in appendix B.2. (FDR of DACOMP with naive reference selection methods) and B.3. (T1E simulation of the reference validation procedure). Results are outputd to text files, see additional details in the script <code>REFSIM_compute_FDR_random_selection.R</code>.</li>
+<li><p><code>REFSIM_compute_FDR_random_selection.R</code> - A script called by <code>REFSIM_compute_FDR_random_selection_batch_script.R</code>, for either estimating FDR of naive reference selection methods or estimationing the T1E of the RVP, each time for a single scenario.</p></li>
 </ul>
 </div>
 </div>
@@ -238,34 +247,34 @@ $(document).ready(function () {
 <div id="scripts-for-producing-graphs" class="section level3">
 <h3>Scripts for producing graphs</h3>
 <ul>
-<li>Graph_section_2_1_incorrect_testing.R</li>
-<li>PLOT_NO_REMOVE_OBS.R</li>
-<li>ReferenceScore_Plot.R</li>
-<li>REFSIM_Plot_Score_Histo_For_Sims.R</li>
+<li><code>Graph_section_2_1_incorrect_testing.R</code> - <strong>(#10)</strong> RUN TO generate the graph for the CDF of the test statistics commonly used for testing differential abundance, found under subsection 2.1 of the manuscript.</li>
+<li><code>PLOT_NO_REMOVE_OBS.R</code> - <strong>(#11)</strong> RUN to generate the graph found under Section 3, showing why removing samples based on the number of counts in a subvector is invalid.</li>
+<li><code>ReferenceScore_Plot.R</code> - A function used for plotting the distribution of reference scores (as defined in subsection 3.1). The DACOMP package has a fancier version of this function, the plain version was used when producing the manuscript.</li>
+<li><code>REFSIM_Plot_Score_Histo_For_Sims.R</code> - <strong>(#12)</strong> A function used for plotting the histogram of reference scores for a single realization from each simulated scenario.</li>
 </ul>
 </div>
 <div id="data-preprocessing" class="section level3">
 <h3>Data preprocessing</h3>
 <ul>
-<li>gut_otu_table_sim.RData</li>
-<li>Gut_Flow_data.RData</li>
-<li>REFSIM_preprocess_Crohn_data.R</li>
+<li><code>gut_otu_table_sim.RData</code> - A table of deblurred sOTU counts for the healthy cohort from the Crohn Disease study, used for simulations.</li>
+<li><code>REFSIM_preprocess_Crohn_data.R</code> - A script for reading the table of deblurred sOTU reads (<code>gut_otu_table_sim.RData</code>) and combining it with the flow cytometry measurements of the healthy cohort to create a single object loaded for the data based simulations of Subsection 4.1 of the manuscript.</li>
+<li><code>Gut_Flow_data.RData</code> - A single object for containing both the table of sOTU reads and flow cytometru measurements used for simulations.</li>
 </ul>
 </div>
 <div id="scripts-used-for-competitor-methods---wilcoxon-and-fisher-exact-test" class="section level3">
 <h3>Scripts used for competitor methods - Wilcoxon, and Fisher exact test</h3>
 <ul>
-<li>exactHyperGeometricTest.R</li>
-<li>Wilcoxon_TaxaWise.R</li>
+<li><code>exactHyperGeometricTest.R</code> - An implementation of the HG test described in Section 4.</li>
+<li><code>Wilcoxon_TaxaWise.R</code> - A wrapper for using Wilcoxon rank sum tests (from the subzero auxiliary package) on each taxon in a given data set (marginal tests for equality of distributions).</li>
 </ul>
 </div>
 <div id="scripts-used-for-data-generation-in-simulation" class="section level3">
 <h3>Scripts used for data generation in simulation</h3>
 <ul>
-<li>REFSIM_GenerateSettings_Index.R</li>
-<li>REFSIM_Gut_Scenario.R</li>
-<li>REFSIM_NO_OVERDISPERSION_SCENARIOS.R</li>
-<li>REFSIM_NoCompositionality_Scenario.R</li>
+<li><code>REFSIM_GenerateSettings_Index.R</code> - A single script generating the index for all simulatin scenarios and loading all additional scripts used for simulations.</li>
+<li><code>REFSIM_Gut_Scenario.R</code> - Script for generating datasets for the scenarios of 4.1 - scenarios based on sampling from real data.</li>
+<li><code>REFSIM_NO_OVERDISPERSION_SCENARIOS.R</code> - Scripts for generating simulated datasets for the scenarios of 4.2 - multinomial cases where the most abundant taxa are not differentially abundant.</li>
+<li><code>REFSIM_NoCompositionality_Scenario.R</code> - Scripts for generating datasets with no compositionality - the scenarios of 4.3.</li>
 </ul>
 </div>
 </div>
