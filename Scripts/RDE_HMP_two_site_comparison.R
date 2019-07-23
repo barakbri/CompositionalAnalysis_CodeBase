@@ -26,6 +26,9 @@
 DISABLE_ANCOM = F
 
 HMP_RESULTS_DIR = "../../Results/HMP/"
+if(!dir.exists(HMP_RESULTS_DIR)){
+  dir.create(HMP_RESULTS_DIR)
+}
 # This will eventually be saved to file:
 results_to_save = list()
 
