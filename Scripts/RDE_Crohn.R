@@ -5,9 +5,9 @@ memory.limit(25000) # scale memory
 library(biomformat)
 Q_LEVEL = 0.1 #BH threshold level
 
-file_path <- "./gut_otu_table.RData" #load counts data
+file_path <- "../Crohn/gut_otu_table.RData" #load counts data
 load(file_path)
-Average_Cell_Count = read.csv(file = 'FlowCytometryCounts.csv')$Average_Cell_Count #load flow cytometry counts
+Average_Cell_Count = read.csv(file = '../Crohn/FlowCytometryCounts.csv')$Average_Cell_Count #load flow cytometry counts
 Y = rep(0,95) #group labeling is such that the first 29 subjects are CD, the rest are healthy.
 Y[1:29] = 1
 

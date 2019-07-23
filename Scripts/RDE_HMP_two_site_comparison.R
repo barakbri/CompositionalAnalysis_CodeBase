@@ -76,8 +76,8 @@ set.seed(1)
 
 AGGREGATE_TO_GENUS = T
 if(LOAD_DATA){ # load data - this is called only once if using the batch script
-  counts_matrix = read.csv(file = '../../HMP2/OTU_Counts.csv')
-  sample_data = read.csv(file = '../../HMP2/HMP_sample_data.csv')
+  counts_matrix = read.csv(file = '../HMP/OTU_Counts.csv')
+  sample_data = read.csv(file = '../HMP/HMP_sample_data.csv')
   genus_type = as.character(counts_matrix[,ncol(counts_matrix)]) # last col contains genus level data
   counts_as_matrix_original = t(counts_matrix[,-ncol(counts_matrix)])
   counts_as_matrix_original = counts_as_matrix_original[-1,]
