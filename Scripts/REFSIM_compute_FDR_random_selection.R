@@ -21,7 +21,10 @@ if(MODE_COMPUTE_GLOBAL_NULL & MODE_COMPUTE_RANDOM_SELECT_FDR){
   stop('MODE_COMPUTE_GLOBAL_NULL and MODE_COMPUTE_RANDOM_SELECT_FDR are mutually exclusive!')
 }
 
-NR.WORKERS = 96 # number of workers - for reproducible results - do not change
+NR.WORKERS = 200 # number of workers - for reproducible results - do not change
+if(MODE_COMPUTE_GLOBAL_NULL){
+  NR.WORKERS = 1000
+}
 NR.CORES = 96
 MAINDIR = './'
 Q_LEVEL = 0.1
@@ -76,7 +79,7 @@ REFSIM_RVP_aggregated_results_file = function(RESULTS_DIR,SCENARIO_ID){
 RESULTS_DIR = paste0("../../Results/")
 
 RNG_SEED = 1
-REPS_PER_SETTING = 3*NR.WORKERS # each worker will run three random generations of the data (in either mdoes)
+REPS_PER_SETTING = 1*NR.WORKERS # each worker will run three random generations of the data (in either mdoes)
 
 if(DEBUG){
   NR.WORKERS = 7
@@ -118,7 +121,7 @@ Worker_Function = function(core_nr){
                           verbose = T,
                           test = DACOMP.TEST.NAME.WILCOXON,
                           nr_perm = 1/(Q_LEVEL/(ncol(data$X))),
-                          q = Q_LEVEL,disable_DS.FDR = F)
+                          q = Q_LEVEL,disable_DSFDR = F)
       
       #compute FDR and TP, for selection at random
       bad_select = length(which(Selected_References_random %in% data$select_diff_abundant))
@@ -141,7 +144,7 @@ Worker_Function = function(core_nr){
                                 verbose = T,
                                 test = DACOMP.TEST.NAME.WILCOXON,
                                 nr_perm = 1/(Q_LEVEL/(ncol(data$X))),
-                                q = Q_LEVEL,disable_DS.FDR = F)
+                                q = Q_LEVEL,disable_DSFDR = F)
       
       #compute TP and FDR for picking the most abundant taxa as reference:
       bad_select = length(which(Selected_References_most_abundant %in% data$select_diff_abundant))
@@ -296,7 +299,8 @@ if(MODE_PROCESS_RESULTS){
   }
   if(MODE_COMPUTE_GLOBAL_NULL){
     print('nr_reject_GN')
-    print(round(nr_reject_GN,2))
+    for(i in 1:length(nr_reject_GN))
+      print(round(nr_reject_GN[i],2))
     print('Error in T1E estimation;2*SE')
     print(round(1.96*sqrt(GlobalNull.Test.Alpha*(1-GlobalNull.Test.Alpha)/(nr_GN_cases)),3))  
   }

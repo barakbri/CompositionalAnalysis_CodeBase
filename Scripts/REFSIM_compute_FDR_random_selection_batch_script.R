@@ -16,7 +16,7 @@ for(s in SCENARIO_VEC){
 
 
 #Run simulations for estimating T1E for the RVP, discussed in appendix B.
-SCENARIO_VEC = c(2,3,10,11,12,16,17,21)
+SCENARIO_VEC = c(2,3,12,16,17,21,26,27)
 
 MODE_COMPUTE_GLOBAL_NULL = T
 MODE_COMPUTE_RANDOM_SELECT_FDR = F
