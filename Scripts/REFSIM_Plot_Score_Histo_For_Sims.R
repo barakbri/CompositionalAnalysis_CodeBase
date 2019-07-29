@@ -57,11 +57,11 @@ write.csv(ref_selection_results,file = paste0(RESULTS_DIR,'/Ref_Selction_Compare
 
 # This section of the is used to estimate the distribution of the references scores for the differentially 
 # abundant taxa across the different scenarios and size of reference sets.
-# This was used to better understand how to set the medianSD threshold.
+# Results were cited in section 4.1.
 set.seed(1)
 SCENARIO_REPS = 10
 m1_scores_list = list() # distribution of differentially abundant scores across scenarios
-SCENARIO_TO_COMPUTE_vec = c(1:25)
+SCENARIO_TO_COMPUTE_vec = c(1:27)
 vec_of_scores = NULL
 ref_size_list = list() # sizes of reference sets across scenarios
 vec_of_ref_size = NULL
@@ -74,7 +74,7 @@ for(SCENARIO_ID in SCENARIO_TO_COMPUTE_vec){ #iterate over scenarios
     print(paste0('r: ',r))
     #generate data and select references:
     data = REFSIM_generate_setting_wrapper(current_setting_generator)
-    ref_select = select.references.Median.SD.Threshold(X = data$X,median_SD_threshold = 1.3,minimal_TA = 10,maximal_TA = 200)
+    ref_select = dacomp::dacomp.select_references(X = data$X,median_SD_threshold = 1.3,minimal_TA = 10,maximal_TA = 200)
     vec_of_scores = c(vec_of_scores,ref_select$scores[data$select_diff_abundant])
     vec_of_ref_size = c(vec_of_ref_size,length(ref_select$selected_references))
   }
@@ -82,6 +82,11 @@ for(SCENARIO_ID in SCENARIO_TO_COMPUTE_vec){ #iterate over scenarios
   ref_size_list[[SCENARIO_ID]] = vec_of_ref_size
   print(paste0('Mean ref size: ',mean(vec_of_ref_size),' SD: ',sd(vec_of_ref_size)))
 }
+
+ref_sizes = cbind(SCENARIO = 1:27,MEAN = unlist(lapply(ref_size_list,mean)),
+      SE = unlist(lapply(ref_size_list,sd)) / sqrt(SCENARIO_REPS))
+
+ref_sizes 
 
 #record results
 MIN_REFSCORE_H1 = SCENARIO_TO_COMPUTE_vec
