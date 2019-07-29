@@ -5,7 +5,7 @@
 #graphs for paper
 library(ggplot2)
 
-NR.REPS.FOR.SE = 96 # this is the number of data generations used for converting SDs to SEs (for the point estiamtes of power and FDR)
+NR.REPS.FOR.SE = 100 # this is the number of data generations used for converting SDs to SEs (for the point estiamtes of power and FDR)
 
 #load point estimates and results
 dt = read.csv('../../Results/REFSIM_Combined_Results.csv')
@@ -115,13 +115,13 @@ gg_color_hue <- function(n) {
 
 # The next section of the script produces the graphs for power and FDR, given in subsection 4.1 and appendix A.
 
-new_col_names =  c('ALDEx2-t','ALDEx2-W','ANCOM','DACOMP-t','DACOMP-ratio','DACOMP','HG','W-CSS','W-TSS','W-FLOW','Wrench','m1','effect')
-new_col_names_no_flow = new_col_names[-c(11,13,14)]
+new_col_names =  c('ALDEx2-t','ALDEx2-W','ANCOM','DACOMP-t','DACOMP-ratio','DACOMP','HG','W-FLOW','W-CSS','W-TSS','Wrench','m1','effect')
+#new_col_names_no_flow = new_col_names[-c(11,13,14)]
 dt_FDR_Plot = dt_FDR
 
 names(dt_FDR_Plot) =new_col_names
 write.csv(dt_FDR_Plot,file = '../../Results/sim1_fdr.csv')
-dt_FDR_Plot = dt_FDR_Plot[, !(colnames(dt_FDR_Plot)%in% c('WCOMP-ratio','WCOMP-t-ratio'))]
+#dt_FDR_Plot = dt_FDR_Plot[, !(colnames(dt_FDR_Plot)%in% c('WCOMP-ratio','WCOMP-t-ratio'))]
 
 library(yarrr)
 pallete = yarrr::piratepal("xmen",
@@ -146,8 +146,8 @@ for(graph_id in c(1,2)){
   dt_FDR_Plot_melt = dt_FDR_Plot_melt[-which(dt_FDR_Plot_melt$m1==0),]
   dt_FDR_Plot_melt$m1 = factor(dt_FDR_Plot_melt$m1,levels = c(10,100),labels = c('m1 = 10','m1 = 100'))
   p_1_FDR = ggplot(dt_FDR_Plot_melt,aes(x=Effect,y = FDR,color = Method))+geom_line(lwd = 0.75) + geom_point(size = 0.4) +
-    facet_wrap(m1~.) + theme_bw()+geom_hline(yintercept = 0.1,color = 'black',lty = 1,alpha=0.2)+xlab(TeX("$\\lambda_{effect}$")) + xlim(c(0,3))+
-    scale_color_manual(values=as.character(pallete[c(1,2,3,4,5,6,7)])) +  geom_hline(yintercept = 0.1+2*se_fdr ,color = 'black',lty = 2,alpha=0.2) #gg_color_hue(10)[1:10]
+    facet_wrap(m1~.) + theme_bw()+geom_hline(yintercept = 0.1,color = 'black',lty = 1,alpha=0.2,lwd = 1.25)+xlab(TeX("$\\lambda_{effect}$")) + xlim(c(0,3))+
+    scale_color_manual(values=as.character(pallete[c(1,2,3,4,5,6,7)]))
   ggsave(p_1_FDR,filename = paste0('../../Results/sim_p1_FDR',graph_id,'.pdf'),width = 7,height = 3)
 }
 
