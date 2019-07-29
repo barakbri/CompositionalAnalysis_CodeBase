@@ -1,6 +1,6 @@
 #This script is used to produce the table found in appendix B.1, detailing the number of diff.abun. taxa that have entered the reference set by mistake
 compute_by_method = 'DACOMP,Wilcoxon,rarefaction,S = 1.3' # we show it for one method - since all of the S=1.3 variants, used the same reference set
-nr.reps.per.case = 96 #must be consistent with the definition in REFSIM_Single_Scenario.R
+nr.reps.per.case = 100 #must be consistent with the definition in REFSIM_Single_Scenario.R
 
 #cases to iterate over
 cases_arr = c(1:27)
