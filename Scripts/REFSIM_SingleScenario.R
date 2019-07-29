@@ -12,7 +12,7 @@
 #This script was run on a machine with 96 cores. You can change this number
 # if you want to run on a different machine
 
-NR.WORKERS = 96
+NR.WORKERS = 100
 NR.CORES = 96
 
 MAINDIR = './'
@@ -62,7 +62,7 @@ if(DEBUG){
 }
 # scenarios 22,25 are memory intensive. ALDEx2 could not run 96 instances in parallel, on the C5 amazon machine I used, so i use only half of the cores (so I wouldnt run out of RAM)
 if(SCENARIO_ID %in% c(22:25) & !DEBUG){
-  NR.CORES = 96/2
+  NR.CORES = 50
 }
 
 NR_REPS_PER_WORKER = ceiling(REPS_PER_SETTING/NR.WORKERS)
@@ -151,10 +151,9 @@ Worker_Function = function(core_nr){
     rarefied_matrix=matrix(nrow = nrow(cnv_corrected_abundance_table_phyloseq), ncol = ncol(cnv_corrected_abundance_table_phyloseq), dimnames = list(rownames(cnv_corrected_abundance_table_phyloseq), colnames(cnv_corrected_abundance_table_phyloseq)))
     for (i in 1:nrow(cnv_corrected_abundance_table_phyloseq))
     {
-      # the rarefaction depth is taken to be minues one counts (a single sequence) from the one they set.
-      # It seems they have a rounding error and you can get a set of number were they try to rarefy
-      # one of the samples to a bigger number of reads than it has (at most one read bigger,
-      # due to rounding)
+      # the rarefaction depth is taken to be one counts less (a single sequence) from the one they set.
+      # It seems they have a rounding error and you can get a generated dataset where they try to rarefy
+      # one of the samples to a larger depth than it originally has (at most one read bigger, due to rounding)
       # The "minus one" fixes that
       x <- rarefy_even_depth(cnv_corrected_abundance_table_phyloseq[i,], sample.size = rarefy_to[i]-1, rngseed = FALSE, replace = FALSE, trimOTUs = F, verbose = FALSE)
       rarefied_matrix[i,] = x
@@ -288,7 +287,7 @@ Worker_Function = function(core_nr){
     if(DEBUG)
       cat(paste0('Computing Wilcoxon \n\r'))
     
-    #with out normalization
+    #without normalization
     res = wilcoxon_taxa_wise(data$X,data$Y)
     rejected = which(p.adjust(res$p.values,method = CORRECTION_TYPE_MULTIPLICITY) <= Q_LEVEL)
     true_positive = length(which(rejected %in% data$select_diff_abundant))
