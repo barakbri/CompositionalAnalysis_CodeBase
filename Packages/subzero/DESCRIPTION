@@ -7,6 +7,6 @@ Author: Barak Brill
 Maintainer: Barak Brill <barakbri@mail.tau.ac.il>
 Description: Package is used for a permutation based implementation of the wilcoxon rank sum test. Used for internal use
 License: LGPL2
-Imports: Rcpp (>= 0.12.17),coin
+Imports: Rcpp (>= 0.12.17)
 LinkingTo: Rcpp
 RoxygenNote: 6.1.1
