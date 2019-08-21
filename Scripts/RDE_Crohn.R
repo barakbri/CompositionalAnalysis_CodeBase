@@ -302,17 +302,19 @@ dev.off()
 
 pdf(file = '../../Results/Crohn_shared.pdf',height = 6,width = 14)
 par(mfrow=c(1,2))
-venn(disc_list_plot_prevalent[c(1,2,3,5,7)])
-venn(disc_list_plot_rare[c(1,2,3,5,7)])
+venn(disc_list_plot_prevalent[c(1,2,3,5,7)],simplify =T,small = 0.9)
+venn(disc_list_plot_rare[c(1,2,3,5,7)],simplify = T,small = 0.9)
 par(mfrow=c(1,1))
 dev.off()
 
 pdf(file = '../../Results/Crohn_shared_prevalent.pdf',height = 6,width = 7)
-venn(disc_list_plot_prevalent[c(1,2,3,5,7)])
+par(mar=c(0,0,0,0))
+venn(disc_list_plot_prevalent[c(1,2,3,5,7)],small = 0.85)
 dev.off()
 
 pdf(file = '../../Results/Crohn_shared_rare.pdf',height = 6,width = 7)
-venn(disc_list_plot_rare[c(1,2,3,5,7)])
+par(mar=c(0,0,0,0))
+venn(disc_list_plot_rare[c(1,2,3,5,7)],small = 0.85)
 dev.off()
 
 pdf(file = '../../Results/One_From_Each_FrameWork.pdf',height = 6,width = 7)
