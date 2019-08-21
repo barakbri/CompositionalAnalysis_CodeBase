@@ -86,14 +86,5 @@ for(SCENARIO_ID in SCENARIO_TO_COMPUTE_vec){ #iterate over scenarios
 ref_sizes = cbind(SCENARIO = 1:27,MEAN = unlist(lapply(ref_size_list,mean)),
       SE = unlist(lapply(ref_size_list,sd)) / sqrt(SCENARIO_REPS))
 
-ref_sizes 
+write.csv(ref_sizes,paste0(RESULTS_DIR,'/REF_SIZES.csv'),row.names = F)
 
-#record results
-MIN_REFSCORE_H1 = SCENARIO_TO_COMPUTE_vec
-for(i in 1:length(MIN_REFSCORE_H1)){
-  MIN_REFSCORE_H1[i] = min(m1_scores_list[[SCENARIO_TO_COMPUTE_vec[i]]])
-}
-
-dt_refscore_m1_sim = data.frame(SCENARIO_TO_COMPUTE_vec,MIN_REFSCORE_H1)
-dt_refscore_m1_sim
-write.csv(dt_refscore_m1_sim,paste0(RESULTS_DIR,'/REFSCORE_H1.csv'),row.names = F)
