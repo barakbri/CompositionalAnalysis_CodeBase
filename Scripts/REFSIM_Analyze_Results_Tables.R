@@ -288,6 +288,113 @@ print(xtable(dt_tp[,c(1,3,5,10,11)]), include.rownames=FALSE) #  remove HG
 Compute_SE_for_Scenarios(22:25)
 Compute_SE_for_Scenarios(22:25,col = 'tp')
 
+#Cases with confounder
+
+dt_4 = dt[dt$setting_id %in% c(28,30,32,34,36,38,40),] #crop scenario results from the main table
+dt_5 = dt[dt$setting_id %in% (c(28,30,32,34,36,38,40)+1),] #crop scenario results from the main table
+
+
+dt_4$m1 = rep(NA,nrow(dt_4))
+dt_5$m1 = rep(NA,nrow(dt_5))
+dt_4$lambda = rep(NA,nrow(dt_4))
+dt_5$lambda = rep(NA,nrow(dt_5))
+
+dt_4$m1[dt_4$setting_id == 28] = 10
+dt_4$m1[dt_4$setting_id == 30] = 10
+dt_4$m1[dt_4$setting_id == 32] = 100
+dt_4$m1[dt_4$setting_id == 34] = 10
+dt_4$m1[dt_4$setting_id == 36] = 100
+dt_4$m1[dt_4$setting_id == 38] = 10
+dt_4$m1[dt_4$setting_id == 40] = 100
+
+dt_5$m1[dt_5$setting_id == 28+1] = 10
+dt_5$m1[dt_5$setting_id == 30+1] = 10
+dt_5$m1[dt_5$setting_id == 32+1] = 100
+dt_5$m1[dt_5$setting_id == 34+1] = 10
+dt_5$m1[dt_5$setting_id == 36+1] = 100
+dt_5$m1[dt_5$setting_id == 38+1] = 10
+dt_5$m1[dt_5$setting_id == 40+1] = 100
+
+dt_4$lambda[dt_4$setting_id == 28] = 0
+dt_4$lambda[dt_4$setting_id == 30] = 1
+dt_4$lambda[dt_4$setting_id == 32] = 1
+dt_4$lambda[dt_4$setting_id == 34] = 2
+dt_4$lambda[dt_4$setting_id == 36] = 2
+dt_4$lambda[dt_4$setting_id == 38] = 3
+dt_4$lambda[dt_4$setting_id == 40] = 3
+
+
+dt_5$lambda[dt_5$setting_id == 28+1] = 0
+dt_5$lambda[dt_5$setting_id == 30+1] = 1
+dt_5$lambda[dt_5$setting_id == 32+1] = 1
+dt_5$lambda[dt_5$setting_id == 34+1] = 2
+dt_5$lambda[dt_5$setting_id == 36+1] = 2
+dt_5$lambda[dt_5$setting_id == 38+1] = 3
+dt_5$lambda[dt_5$setting_id == 40+1] = 3
+
+crop_global_null = dt_4[dt_4$lambda==0,]
+crop_global_null$m1 = 100
+dt_4 = rbind(dt_4,crop_global_null)
+dt_4$Artifical_Disease_Group = "Group Y Oversampled,"
+crop_global_null = dt_5[dt_5$lambda==0,]
+crop_global_null$m1 = 100
+dt_5 = rbind(dt_5,crop_global_null)
+dt_5$Artifical_Disease_Group = "Group Y Undersampled,"
+
+dt_confounder = rbind(dt_4,dt_5)
+dt_confounder$methodlabel = as.character(dt_confounder$methodlabel)
+colnames(dt_confounder)[colnames(dt_confounder) == 'methodlabel'] = 'Method'
+replace_vec = unique(dt_confounder$Method)
+replace_to = c('ALDEx2-t','ALDEx2-W','ANCOM','DACOMP-t','DACOMP-ratio','DACOMP','HG','W-FLOW','W-CSS','W-TSS','Wrench')
+for(i in 1:length(replace_vec)){
+  dt_confounder$Method[dt_confounder$Method == replace_vec[i]] = replace_to[i]
+}
+dt_confounder$m1 = factor(dt_confounder$m1,levels = c(10,100),labels = c('m1 = 10','m1 = 100'))
+dt_confounder_main_method = dt_confounder[dt_confounder$Method %in% methods_main_body,]
+dt_confounder_main_method$Method = factor(dt_confounder_main_method$Method,levels = methods_main_body)
+dt_confounder_appendix_method = dt_confounder[dt_confounder$Method %in% methods_appendix,]
+dt_confounder_appendix_method$Method  = factor(dt_confounder_appendix_method$Method,levels = methods_appendix)
+
+library(ggplot2)
+library(yarrr)
+pallete = yarrr::piratepal("xmen",
+                           plot.result = FALSE)#[c(1,2,3,4,10)]          
+pallete = substr(pallete,1,7)
+
+for(i in 1:2){
+  #i=1
+  dt_list = list(dt_confounder_main_method,dt_confounder_appendix_method)
+  dt_current = dt_list[[i]]
+  
+  p_fdr = ggplot(dt_current,aes(x = lambda,y=fdr,color = Method))+
+    geom_line(lwd = 0.75) + geom_point(size = 0.4)+
+    facet_wrap(Artifical_Disease_Group~m1) +
+    theme_bw()+geom_hline(yintercept = 0.1,color = 'black',lty = 1,alpha=0.2,lwd = 1.25)+
+    xlab(TeX("$\\lambda_{effect}$"))+scale_color_manual(values=as.character(pallete[c(1,2,3,4,5,7,6)]))+ylab('FDR')
+  
+  
+  
+  p_tp = ggplot(dt_current[dt_current$Method != 'HG',],aes(x = lambda,y=tp,color = Method))+
+    geom_line(lwd = 0.75) + geom_point(size = 0.4)+
+    facet_wrap(Artifical_Disease_Group~m1) +
+    theme_bw()+geom_hline(yintercept = 0.1,color = 'black',lty = 1,alpha=0.2,lwd = 1.25)+
+    xlab(TeX("$\\lambda_{effect}$"))+scale_color_manual(values=as.character(pallete[c(1,2,3,4,7,6)]))+ylab('Diff. Abun. Taxa Discovered')
+  
+  
+  
+  p_tp_m1_100 = ggplot(dt_current[dt_current$m1 == 'm1 = 100' & dt_current$Method != 'HG',],aes(x = lambda,y=tp,color = Method))+
+    geom_line(lwd = 0.75) + geom_point(size = 0.4)+
+    facet_wrap(Artifical_Disease_Group~m1) +
+    theme_bw()+geom_hline(yintercept = 0.1,color = 'black',lty = 1,alpha=0.2,lwd = 1.25)+
+    xlab(TeX("$\\lambda_{effect}$"))+scale_color_manual(values=as.character(pallete[c(1,2,3,4,7,6)]))+ylab('Diff. Abun. Taxa Discovered')
+  ret = list()
+  
+  ggsave(p_fdr,filename = paste0('../../Results/sim_p4_FDR_',i,'.pdf'),width = 7,height = 5)
+  ggsave(p_tp,filename = paste0('../../Results/sim_p4_TP_',i,'.pdf'),width = 7,height = 5)
+  ggsave(p_tp_m1_100,filename = paste0('../../Results/sim_p4_TP_m1_100_',i,'.pdf'),width = 5,height = 5)
+  
+  
+}
 
 
 

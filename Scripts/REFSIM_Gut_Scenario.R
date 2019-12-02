@@ -23,7 +23,8 @@ REFSIM_generate_Gut_TYPE_Scenario = function(label = "MISSING_LABEL", #label for
                                global_NULL = F,#is it a global null scenario
                                Const_Size_Variant = F, #for a variant with some taxa going up and some going down, but for null taxa, marginal distribtuions are the same
                                Const_Size_Effect_Multiplier = 2, # Parameters for Const size variant - not used in simulations 
-                               Percent_to_add = 0.5
+                               Percent_to_add = 0.5,
+                               Reads_Multiplier_Group_1 = 1 # for creating a confounder effect between the number of reads and the group labeling
                                ){
   #Pack scenario definitions into a list object
   m = ncol(Gut_Flow_data$counts_matrix)
@@ -64,6 +65,7 @@ REFSIM_generate_Gut_TYPE_Scenario = function(label = "MISSING_LABEL", #label for
   ret$index_in_selected_for_reducing = index_in_selected_for_reducing
   ret$Const_Size_Effect_Multiplier = Const_Size_Effect_Multiplier
   ret$Percent_to_add = Percent_to_add
+  ret$Reads_Multiplier_Group_1 = Reads_Multiplier_Group_1
   class(ret) = REFSIM_GUT_TYPE_SCENARIO_DEF
   return(ret)
 }
@@ -93,6 +95,7 @@ REFSIM_generate_data_for_Gut_Type_Scenario = function(setting_def){
   index_in_selected_for_reducing = setting_def$index_in_selected_for_reducing
   select_diff_abundant_scalar = setting_def$select_diff_abundant_scalar
   Percent_to_add = setting_def$Percent_to_add
+  Reads_Multiplier_Group_1 = setting_def$Reads_Multiplier_Group_1
   
   # allocate memory for returned types
   X_unsampled = matrix(NA,nrow = setting_def$n0 + setting_def$n1,ncol = setting_def$m)
@@ -133,7 +136,9 @@ REFSIM_generate_data_for_Gut_Type_Scenario = function(setting_def){
     }
     
     Total_Original_Counts[i] = sum(X_unsampled[i,])
-    counts_to_sample = rpois(1,poisson_mean_reads) #pick the observed sampling depth
+    
+    Confounder_Multiplier = (1*(Y[i]==0)) + Reads_Multiplier_Group_1 * (Y[i]==1)
+    counts_to_sample = rpois(1,poisson_mean_reads * Confounder_Multiplier) #pick the observed sampling depth
     
     prob_vector = X_unsampled[i,]/sum(X_unsampled[i,])
     X[i,] = rmultinom(1,counts_to_sample , prob = prob_vector) # Do actual sampling

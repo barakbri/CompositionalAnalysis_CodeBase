@@ -1,7 +1,7 @@
 #This script is used for running REFSIM_SingleScenario.R across multiple scenarios
 # See readme on how this file fits in the overall pipeline for getting results for the paper
 
-SCENARIO_VEC = c(1:27)
+SCENARIO_VEC = c(1:41)
 
 for(s in SCENARIO_VEC){
   SCENARIO_ID = s
