@@ -5,8 +5,9 @@
 
 
 pdf(file = paste0('../../Results/NO_FILTER_GRAPH.pdf'),width = 7,height = 2)
-par(mar = c(2,2,1,1))
-layout(matrix(c(1,1, 2,3), nrow = 1, ncol = 4, byrow = TRUE))
+#par(mar = c(2,2,1,1))
+par(mar = c(4,4,1,1))
+layout(matrix(c(1,1,1,2, 2,3,3), nrow = 1, ncol = 7, byrow = TRUE))
 cex_param = 0.8
 n_X = n_Y = 16
 rate_X = 20
@@ -43,7 +44,7 @@ X_tilde_r = lambda_rar - X_tilde_j
 Y_tilde_r = lambda_rar - Y_tilde_j
 
 
-plot(jitter(Y_tilde_j,0),jitter(Y_tilde_r,6),pch=1,col = 'black',xlim = c(0,lambda_rar),ylim = c(0,lambda_rar),main = 'B',xlab = "Counts in taxon j",ylab = "" ,cex = cex_param)
+plot(jitter(Y_tilde_j,0),jitter(Y_tilde_r,6),pch=1,col = 'black',xlim = c(0,lambda_rar),ylim = c(0,lambda_rar),main = 'B',xlab = "Subsampled Counts, taxon j",ylab = "Subsampled Counts, reference" ,cex = cex_param)
 points(jitter(X_tilde_j,0),jitter(X_tilde_r,6),pch=4,col = 'black' ,cex = cex_param)
 clip(0,lambda_rar, 0, lambda_rar)
 abline(0,1,col = 'blue',lwd = 1)
@@ -65,7 +66,7 @@ X_tilde_r_filtered = lambda_rar_filtered - X_tilde_j_filtered
 Y_tilde_r_filtered = lambda_rar_filtered - Y_tilde_j_filtered
 
 
-plot(jitter(Y_tilde_j_filtered,0),jitter(Y_tilde_r_filtered,6),pch=1,col = 'black',xlim = c(0,lambda_rar_filtered),ylim = c(0,lambda_rar_filtered),main = 'C',xlab = "Counts in taxon j",ylab = "" ,cex = cex_param)
+plot(jitter(Y_tilde_j_filtered,0),jitter(Y_tilde_r_filtered,6),pch=1,col = 'black',xlim = c(0,lambda_rar_filtered),ylim = c(0,lambda_rar_filtered),main = 'C',xlab = "Subsampled Counts, taxon j",ylab = "Subsampled Counts, reference" ,cex = cex_param)
 points(jitter(X_tilde_j_filtered,0),jitter(X_tilde_r_filtered,6),pch=4,col = 'black' ,cex = cex_param)
 clip(0,25, 0, 25)
 
