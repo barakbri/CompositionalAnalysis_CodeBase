@@ -396,5 +396,9 @@ for(i in 1:2){
   
 }
 
+se_fdr = Compute_SE_for_Scenarios(28:41)
+se_fdr
+Compute_SE_for_Scenarios(28:41,col = 'tp')
+
 
 
