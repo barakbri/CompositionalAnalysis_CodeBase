@@ -58,3 +58,14 @@ for(e_i in 1:3){ # For each effect, run sim:
 #Close file:
 dev.off()
 par(mfrow = c(1,1))
+
+effect_grid = c(0.25,0.33,0.5)
+for(e_i in 1:length(effect_grid)){
+  N = 5000 #Sequencing depth
+  p_vector_X = c( 1- 6/N, 1/N, 5/N ) # baseline proportions
+  effect = effect_grid[e_i]
+  p_vector_Y = (1-effect) * p_vector_X + effect * c(1,0,0)
+  print(paste0('effect: ',effect))
+  print(paste0('Prob for zero in Y=0: ',round(dbinom(x = 0,size = N,prob = sum(p_vector_X[2:3])),3)))
+  print(paste0('Prob for zero in Y=1: ',round(dbinom(x = 0,size = N,prob = sum(p_vector_Y[2:3])),3)))
+}
