@@ -335,11 +335,11 @@ dt_5$lambda[dt_5$setting_id == 40+1] = 3
 crop_global_null = dt_4[dt_4$lambda==0,]
 crop_global_null$m1 = 100
 dt_4 = rbind(dt_4,crop_global_null)
-dt_4$Artifical_Disease_Group = "Group Y Oversampled,"
+dt_4$Artifical_Disease_Group = "Group S Oversampled,"
 crop_global_null = dt_5[dt_5$lambda==0,]
 crop_global_null$m1 = 100
 dt_5 = rbind(dt_5,crop_global_null)
-dt_5$Artifical_Disease_Group = "Group Y Undersampled,"
+dt_5$Artifical_Disease_Group = "Group S Undersampled,"
 
 dt_confounder = rbind(dt_4,dt_5)
 dt_confounder$methodlabel = as.character(dt_confounder$methodlabel)
