@@ -5,6 +5,10 @@
 #Step I: Load the data
 #%%%%%%%%%%%%%%%%%%%%%%%%%%
 source('./RDE_Crohn_Load_Dataset.R')
+OTHER = 2
+prevalence_matrix = 1*(X>0)
+to_remove = which(as.numeric(apply(prevalence_matrix, 2, sum))<OTHER)
+X = X[,-to_remove]
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%
 #Step II: train a taxonomy classifier, and run classify the different sOTUs
@@ -18,6 +22,7 @@ Q_LVL = 0.01
 
 set.seed(1) # Initialize random number generator for reproducibility
 seqs = colnames(X)
+
 taxa <- assignTaxonomy(seqs,
                        "../Crohn/gg_13_8_train_set_97.fa.gz",
                        multithread=T,
@@ -65,8 +70,8 @@ for(genera_id_to_test in 1:length(genera_labels_to_test)){
   X_genera_to_rarefy_amalgamated = cbind(apply(X[,ind_genera],1,sum),total_counts_in_reference)
   lambda_j = min(apply(X_genera_to_rarefy,1,sum))
   
-  X_genera_rarefied = vegan::rarefy(X_genera_to_rarefy,sample = lambda_j)
-  X_genera_rarefied_amalgamated = vegan::rarefy(X_genera_to_rarefy,sample = lambda_j)
+  X_genera_rarefied = vegan::rrarefy(X_genera_to_rarefy,sample = lambda_j)
+  X_genera_rarefied_amalgamated = vegan::rrarefy(X_genera_to_rarefy_amalgamated,sample = lambda_j)
   
   X_genera_TSS = X_genera_to_rarefy
   X_genera_TSS_amalgamated = X_genera_to_rarefy_amalgamated
@@ -76,7 +81,7 @@ for(genera_id_to_test in 1:length(genera_labels_to_test)){
   }
   
   Dist_BC_rarefied = vegan::vegdist(X_genera_rarefied)
-  Dist_BC_rarefied_amal = vegan::vegdist(X_genera_rarefied)
+  Dist_BC_rarefied_amal = vegan::vegdist(X_genera_rarefied_amalgamated)
   Dist_BC = vegan::vegdist(X_genera_to_rarefy)
   Dist_BC_amal = vegan::vegdist(X_genera_to_rarefy_amalgamated)
   
@@ -93,6 +98,8 @@ for(genera_id_to_test in 1:length(genera_labels_to_test)){
   pval_permanova_ratio_amalgamated[genera_id_to_test] = res_permanova$aov.tab[1,6]
 }
 
+pval_permanova_rarefied[is.na(pval_permanova_rarefied)] = 1
+pval_permanova_rarefied_amalgamated[is.na(pval_permanova_rarefied_amalgamated)] = 1
 
 adj_pval_permanova_rarefied = p.adjust(pval_permanova_rarefied,method = 'BH')
 adj_pval_permanova_rarefied_amalgamated = p.adjust(pval_permanova_rarefied_amalgamated,method = 'BH')
