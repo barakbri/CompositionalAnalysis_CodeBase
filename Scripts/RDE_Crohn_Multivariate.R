@@ -1,6 +1,28 @@
 # This script runs the multivariate tests, over genera of taxa,
 #for the Crohn's Disease dataset example.
 
+smahal = function (X) 
+{
+  X <- as.matrix(X)
+  n <- dim(X)[1]
+  rownames(X) <- 1:n
+  k <- dim(X)[2]
+  for (j in 1:k) X[, j] <- rank(X[, j])
+  cv <- cov(X)
+  vuntied <- var(1:n)
+  rat <- sqrt(vuntied/diag(cv))
+  cv <- diag(rat) %*% cv %*% diag(rat)
+  out <- matrix(NA, n, n)
+  rownames(out) <- rownames(X)
+  colnames(out) <- rownames(X)
+  library(MASS)
+  icov <- ginv(cv)
+  for (i in 1:m) out[i, ] <- mahalanobis(X, X[i, ], icov, 
+                                         inverted = T)
+  out
+}
+
+
 #%%%%%%%%%%%%%%%%%%%%%%%%%%
 #Step I: Load the data
 #%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -10,6 +32,8 @@ prevalence_matrix = 1*(X>0)
 to_remove = which(as.numeric(apply(prevalence_matrix, 2, sum))<OTHER)
 X = X[,-to_remove]
 
+load('../../Results/Gut_temp_v2_file_2.RData') # This is for S_crit = 1.3
+
 #%%%%%%%%%%%%%%%%%%%%%%%%%%
 #Step II: train a taxonomy classifier, and run classify the different sOTUs
 #%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -18,7 +42,7 @@ X = X[,-to_remove]
 library(dada2); packageVersion("dada2")
 library(vegan)
 NR_PERMS_MULTIVARIATE = 5000
-Q_LVL = 0.01
+Q_LVL = 0.1
 
 set.seed(1) # Initialize random number generator for reproducibility
 seqs = colnames(X)
@@ -48,13 +72,13 @@ genera_labels_to_test = names(genera_labels_to_test)
 #%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 #select references
-reference_obj = dacomp::dacomp.select_references(X = X,median_SD_threshold = 1.3,minimal_TA = 10,maximal_TA = 200,verbose = T)
+reference_obj = temp_obj$current_selected_ref_obj #Selected in the univariate example
 #dacomp::dacomp.plot_reference_scores(reference_obj)
 
-pval_permanova_rarefied             = rep(NA,length(genera_labels_to_test))
-pval_permanova_rarefied_amalgamated = rep(NA,length(genera_labels_to_test))
-pval_permanova_ratio                = rep(NA,length(genera_labels_to_test))
-pval_permanova_ratio_amalgamated    = rep(NA,length(genera_labels_to_test))
+pval_rarefied             = rep(NA,length(genera_labels_to_test))
+pval_rarefied_amalgamated = rep(NA,length(genera_labels_to_test))
+pval_ratio                = rep(NA,length(genera_labels_to_test))
+pval_ratio_amalgamated    = rep(NA,length(genera_labels_to_test))
 
 set.seed(1)
 for(genera_id_to_test in 1:length(genera_labels_to_test)){
@@ -80,53 +104,66 @@ for(genera_id_to_test in 1:length(genera_labels_to_test)){
     X_genera_TSS_amalgamated[i,] = X_genera_TSS_amalgamated[i,]/sum(X_genera_TSS_amalgamated[i,])
   }
   
-  Dist_BC_rarefied = vegan::vegdist(X_genera_rarefied)
-  Dist_BC_rarefied_amal = vegan::vegdist(X_genera_rarefied_amalgamated)
-  Dist_BC = vegan::vegdist(X_genera_to_rarefy)
-  Dist_BC_amal = vegan::vegdist(X_genera_to_rarefy_amalgamated)
+  #X_genera_rarefied = X_genera_rarefied[,-ncol(X_genera_to_rarefy),drop = F]
+  #X_genera_TSS = X_genera_TSS[,-ncol(X_genera_to_rarefy),drop = F]
+  X_genera_rarefied_amalgamated = X_genera_rarefied_amalgamated[,-ncol(X_genera_to_rarefy),drop = F]
+  X_genera_TSS_amalgamated = X_genera_TSS_amalgamated[,-ncol(X_genera_to_rarefy),drop = F]
   
-  res_permanova = vegan::adonis(Dist_BC_rarefied~Y,permutations = NR_PERMS_MULTIVARIATE)
-  pval_permanova_rarefied[genera_id_to_test] = res_permanova$aov.tab[1,6]
+  Dist_L1_rarefied = dist(X_genera_rarefied,method = 'manhattan')
+  Dist_L1 = dist(X_genera_TSS,method = 'manhattan')
+  Dist_L1_amalgamated_rarefied = dist(X_genera_rarefied_amalgamated,method = 'manhattan')
+  Dist_L1_amalgamated = dist(X_genera_TSS_amalgamated,method = 'manhattan')
   
-  res_permanova = vegan::adonis(Dist_BC_rarefied_amal~Y,permutations = NR_PERMS_MULTIVARIATE)
-  pval_permanova_rarefied_amalgamated[genera_id_to_test] = res_permanova$aov.tab[1,6]
   
-  res_permanova = vegan::adonis(Dist_BC~Y,permutations = NR_PERMS_MULTIVARIATE)
-  pval_permanova_ratio[genera_id_to_test] = res_permanova$aov.tab[1,6]
+  res_permanova = vegan::adonis(Dist_L1_rarefied~Y,permutations = NR_PERMS_MULTIVARIATE)
+  pval_rarefied[genera_id_to_test] = res_permanova$aov.tab[1,6]
   
-  res_permanova = vegan::adonis(Dist_BC_amal~Y,permutations = NR_PERMS_MULTIVARIATE)
-  pval_permanova_ratio_amalgamated[genera_id_to_test] = res_permanova$aov.tab[1,6]
+  res_permanova = vegan::adonis(Dist_L1~Y,permutations = NR_PERMS_MULTIVARIATE)
+  pval_ratio[genera_id_to_test] = res_permanova$aov.tab[1,6]
+
+  res_permanova = vegan::adonis(Dist_L1_amalgamated_rarefied~Y,permutations = NR_PERMS_MULTIVARIATE)
+  pval_rarefied_amalgamated[genera_id_to_test] = res_permanova$aov.tab[1,6]
+
+  res_permanova = vegan::adonis(Dist_L1_amalgamated~Y,permutations = NR_PERMS_MULTIVARIATE)
+  pval_ratio_amalgamated[genera_id_to_test] = res_permanova$aov.tab[1,6]
+  
+  #
+  # 
+  # res_wilcoxon = subzero::PermSumCount.test(X = X_genera_rarefied_amalgamated[,1],Y = Y,B = NR_PERMS_MULTIVARIATE,DoWald = as.integer(0),return_perms = F,disable.ties.correction = F)
+  # pval_rarefied_amalgamated[genera_id_to_test] = res_wilcoxon$p.value
+  # 
+  # res_wilcoxon = subzero::PermSumCount.test(X = X_genera_TSS_amalgamated[,1],Y = Y,B = NR_PERMS_MULTIVARIATE,DoWald = as.integer(0),return_perms = F,disable.ties.correction = F)
+  # pval_ratio_amalgamated[genera_id_to_test] = res_wilcoxon$p.value
 }
 
-pval_permanova_rarefied[is.na(pval_permanova_rarefied)] = 1
-pval_permanova_rarefied_amalgamated[is.na(pval_permanova_rarefied_amalgamated)] = 1
+pval_rarefied[is.na(pval_rarefied)] = 1
+pval_rarefied_amalgamated[is.na(pval_rarefied_amalgamated)] = 1
 
-adj_pval_permanova_rarefied = p.adjust(pval_permanova_rarefied,method = 'BH')
-adj_pval_permanova_rarefied_amalgamated = p.adjust(pval_permanova_rarefied_amalgamated,method = 'BH')
-adj_pval_permanova_ratio = p.adjust(pval_permanova_ratio,method = 'BH')
-adj_pval_permanova_ratio_amalgamated = p.adjust(pval_permanova_ratio_amalgamated,method = 'BH')
+adj_pval_rarefied = p.adjust(pval_rarefied,method = 'BH')
+adj_pval_rarefied_amalgamated = p.adjust(pval_rarefied_amalgamated,method = 'BH')
+adj_pval_ratio = p.adjust(pval_ratio,method = 'BH')
+adj_pval_ratio_amalgamated = p.adjust(pval_ratio_amalgamated,method = 'BH')
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%
 #Step V: Analyze results:
 #%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 #plot the rejections by test
-Q_LVL = 0.1
-plot(-log(adj_pval_permanova_rarefied),-log(adj_pval_permanova_rarefied_amalgamated))
+plot(-log(adj_pval_rarefied),-log(adj_pval_rarefied_amalgamated))
 abline(h = -log(Q_LVL),col = 'red')
 abline(a = 0,b=1,col = 'red')
 abline(v = -log(Q_LVL),col = 'red')
 
-sum(adj_pval_permanova_rarefied<=Q_LVL) #rejections for rarefied multivariate
-sum(adj_pval_permanova_rarefied_amalgamated<=Q_LVL) #rarefied univariate
-sum(adj_pval_permanova_rarefied<=Q_LVL & adj_pval_permanova_rarefied_amalgamated >Q_LVL) # multivariate discoveries that are unique
-sum(adj_pval_permanova_rarefied<=adj_pval_permanova_rarefied_amalgamated &
-      adj_pval_permanova_rarefied_amalgamated <=Q_LVL) #pvalues lower in multivariate than in univariate
+sum(adj_pval_rarefied<=Q_LVL) #rejections for rarefied multivariate
+sum(adj_pval_rarefied_amalgamated<=Q_LVL) #rarefied univariate
+sum(adj_pval_rarefied<=Q_LVL & adj_pval_rarefied_amalgamated >Q_LVL) # multivariate discoveries that are unique
+sum(adj_pval_rarefied<=adj_pval_rarefied_amalgamated &
+      adj_pval_rarefied_amalgamated <=Q_LVL) #pvalues lower in multivariate than in univariate
 
 #discoveries for the ratio test
-sum(adj_pval_permanova_ratio<=Q_LVL)
-sum(adj_pval_permanova_ratio_amalgamated<=Q_LVL)
-sum(adj_pval_permanova_ratio<=Q_LVL & adj_pval_permanova_ratio_amalgamated >Q_LVL)
+sum(adj_pval_ratio<=Q_LVL)
+sum(adj_pval_ratio_amalgamated<=Q_LVL)
+sum(adj_pval_ratio<=Q_LVL & adj_pval_ratio_amalgamated >Q_LVL)
 
 #sizes of genera, in terms of OTUs
 gen_size = rep(NA,length(genera_labels_to_test))

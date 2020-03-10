@@ -167,100 +167,33 @@ adj_pval_rarefied_amalgamated = p.adjust(pval_rarefied_amalgamated,method = 'BH'
 adj_pval_ratio = p.adjust(pval_ratio,method = 'BH')
 adj_pval_ratio_amalgamated = p.adjust(pval_ratio_amalgamated,method = 'BH')
 
+
 #%%%%%%%%%%%%%%%%%%%%%%%%%%
 #Step V: Analyze results:
 #%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-# count the number of rejections, for univariate tests in each genus
-rejected_univariate = rep(0,ncol(X))
-rejected_univariate[which(p.adjust(temp_obj$res_perm_Wilcoxon$p.values.test,method = 'BH')<=0.1)] = 1
-rejected_univariate_ratio = rep(0,ncol(X))
-rejected_univariate_ratio[which(p.adjust(temp_obj$res_perm_Wilcoxon$p.values.test.ratio.normalization,method = 'BH')<=0.1)] = 1
 
-sum_of_rejected_univariate_in_tested_genus = rep(0,length(genera_labels_to_test))
-sum_of_rejected_univariate_ratio_in_tested_genus = rep(0,length(genera_labels_to_test))
-for(i in 1:length(genera_labels_to_test)){
-  sum_of_rejected_univariate_in_tested_genus[i] = sum(
-    rejected_univariate[
-      which(genera_labels_to_test[i] == unname(taxa)[,6])
-      ]
-  )
-  
-  sum_of_rejected_univariate_ratio_in_tested_genus[i] = sum(
-    rejected_univariate_ratio[
-      which(genera_labels_to_test[i] == unname(taxa)[,6])
-      ]
-  )
+# a list, containing the vecotrs of indices of discoveries, by method
+disc_list = list(
+  which(adj_pval_rarefied<=Q_LVL),
+  which(adj_pval_ratio<=Q_LVL),
+  which(adj_pval_rarefied_amalgamated<=Q_LVL),
+  which(adj_pval_ratio_amalgamated<=Q_LVL)
+)
+
+#compute a matrix of shared discoveries. Diagonal entries are the number of discoveries of each method
+method_names_rows = c('Multi.','Ratio, Multi.','Uni.','Ratio, Uni.')
+method_names_col = method_names_rows#c('DACOMP, Mult.','DACOMP-Ratio, Mult.','DACOMP, Uni.','DACOMP-Ratio, Uni.')
+shared_disc_mat = matrix(NA,nrow = length(method_names_rows),ncol = length(method_names_rows))
+rownames(shared_disc_mat) = method_names_rows
+colnames(shared_disc_mat) = method_names_col
+for(i in 1:length(method_names_rows)){
+  for(j in i:length(method_names_rows)){
+    shared_disc_mat[i,j] = sum(disc_list[[i]] %in% disc_list[[j]])
+  }
 }
 
-
-#plot the rejections by test
-plot(-log(adj_pval_rarefied),-log(adj_pval_rarefied_amalgamated))
-abline(h = -log(Q_LVL),col = 'red')
-abline(a = 0,b=1,col = 'red')
-abline(v = -log(Q_LVL),col = 'red')
-
-#Generate a matrix of results
-output_mat = matrix(NA,ncol=2,nrow = 5)
-colnames(output_mat) = c("DACOMP","DACOMP-Ratio")
-rownames(output_mat) = c("Multivariate","Univariate, Genus-level","Multivariate, not in Uni. Genus level","Multivariate, not in Uni. sOTU level", "Multivariate, not in Uni. Genus or sOTU levels")
-
-
-output_mat[1,1] = sum(adj_pval_rarefied<=Q_LVL) #rejections for rarefied multivariate
-output_mat[2,1] = sum(adj_pval_rarefied_amalgamated<=Q_LVL) #rarefied univariate
-output_mat[3,1] = sum(adj_pval_rarefied<=Q_LVL & adj_pval_rarefied_amalgamated >Q_LVL) # multivariate discoveries that are unique
-sum(adj_pval_rarefied<=adj_pval_rarefied_amalgamated &
-      adj_pval_rarefied_amalgamated <=Q_LVL) #joint discovery pvalues lower in multivariate than in univariate
-
-output_mat[4,1] = sum(sum_of_rejected_univariate_in_tested_genus==0 & adj_pval_rarefied<=Q_LVL) #discoveries with no sOTU level discoveries
-sum(sum_of_rejected_univariate_in_tested_genus==0 & adj_pval_rarefied_amalgamated<=Q_LVL) # discoveries on the genus univariate level, with no sOTUs discovered by univariate analysis
-
-# The number of genera which only multivariate discovered (and both univariates didn't)
-output_mat[5,1] = sum(sum_of_rejected_univariate_in_tested_genus==0 &
-      adj_pval_rarefied<=Q_LVL &
-      adj_pval_rarefied_amalgamated > Q_LVL)
-
-# which are this genera
-genera_labels_to_test[which(sum_of_rejected_univariate_in_tested_genus==0 &
-                              adj_pval_rarefied<=Q_LVL &
-                              adj_pval_rarefied_amalgamated > Q_LVL)] 
-
-#discoveries lost in univariate analysis when amalgamating:
-sum(sum_of_rejected_univariate_in_tested_genus>0 & adj_pval_rarefied_amalgamated > Q_LVL)
-
-#CONT. - DACOMP RATIO
-#discoveries for the ratio test, similar structure of output
-output_mat[1,2] = sum(adj_pval_ratio<=Q_LVL)
-output_mat[2,2] = sum(adj_pval_ratio_amalgamated<=Q_LVL)
-output_mat[3,2] = sum(adj_pval_ratio<=Q_LVL & adj_pval_ratio_amalgamated >Q_LVL)
-
-output_mat[4,2] = sum(sum_of_rejected_univariate_ratio_in_tested_genus==0 & adj_pval_ratio<=Q_LVL)
-sum(sum_of_rejected_univariate_ratio_in_tested_genus==0 & adj_pval_ratio_amalgamated<=Q_LVL)
-
-output_mat[5,2] = sum(sum_of_rejected_univariate_ratio_in_tested_genus==0 &
-      adj_pval_ratio<=Q_LVL &
-      adj_pval_ratio_amalgamated > Q_LVL)
-
 library(xtable)
-xtable::xtable(output_mat)
-plot(-log(adj_pval_ratio),-log(adj_pval_ratio_amalgamated))
-abline(h = -log(Q_LVL),col = 'red')
-abline(a = 0,b=1,col = 'red')
-abline(v = -log(Q_LVL),col = 'red')
-
-sum(sum_of_rejected_univariate_ratio_in_tested_genus>0 & adj_pval_ratio_amalgamated > Q_LVL)
-
-
-
-                         
-                         
-#sizes of genera, in terms of OTUs
-gen_size = rep(NA,length(genera_labels_to_test))
-for(genera_id_to_test in 1:length(genera_labels_to_test))
-  gen_size[genera_id_to_test] = length(which(genera_labels == genera_labels_to_test[genera_id_to_test]))
-
-median(gen_size) 
-mean(gen_size)
-
+xtable(shared_disc_mat)
 
 
