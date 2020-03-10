@@ -132,6 +132,17 @@ methods_main_body = c('ALDEx2-t','ANCOM','DACOMP-ratio','DACOMP','HG','W-CSS','W
 methods_appendix = c('ALDEx2-W','DACOMP-t','W-TSS','Wrench')
 methods_list = list(methods_main_body = methods_main_body, methods_appendix = methods_appendix)
 
+Melted_list_FDR = list()
+Melted_list_TP = list()
+Melted_list_Power = list()
+plots_list_FDR = list()
+plots_list_TP = list()
+plots_list_Power = list()
+
+plots_list_FDR_vertical = list()
+plots_list_Power_vertical = list()
+plots_list_Power_vertical_with_HG = list()
+BASE_FONT_SIZE_VERTICAL = 15
 # two graphs for FDR- main body and appendix
 for(graph_id in c(1,2)){
   dt_FDR_Plot_melt = reshape2::melt(dt_FDR_Plot,id.vars = c('m1','effect'), value.name = 'FDR')
@@ -145,9 +156,17 @@ for(graph_id in c(1,2)){
   names(dt_FDR_Plot_melt)[2] = 'Effect'
   dt_FDR_Plot_melt = dt_FDR_Plot_melt[-which(dt_FDR_Plot_melt$m1==0),]
   dt_FDR_Plot_melt$m1 = factor(dt_FDR_Plot_melt$m1,levels = c(10,100),labels = c('m1 = 10','m1 = 100'))
+  Melted_list_FDR[[graph_id]] = dt_FDR_Plot_melt
   p_1_FDR = ggplot(dt_FDR_Plot_melt,aes(x=Effect,y = FDR,color = Method))+geom_line(lwd = 0.75) + geom_point(size = 0.4) +
     facet_wrap(m1~.) + theme_bw()+geom_hline(yintercept = 0.1,color = 'black',lty = 1,alpha=0.2,lwd = 1.25)+xlab(TeX("$\\lambda_{effect}$")) + xlim(c(0,3))+
     scale_color_manual(values=as.character(pallete[c(1,2,3,4,5,6,7)]))
+  plots_list_FDR[[graph_id]] = p_1_FDR
+  
+  p_1_vertical = ggplot(dt_FDR_Plot_melt,aes(x=Effect,y = FDR,color = Method))+geom_line(lwd = 0.75) + geom_point(size = 0.4) +
+    facet_grid(m1~.) + theme_bw(base_size = BASE_FONT_SIZE_VERTICAL)+geom_hline(yintercept = 0.1,color = 'black',lty = 1,alpha=0.2,lwd = 1.25)+xlab(TeX("$\\lambda_{effect}$")) + xlim(c(0,3))+
+    scale_color_manual(values=as.character(pallete[c(1,2,3,4,5,6,7)]))
+  
+  plots_list_FDR_vertical[[graph_id]] = p_1_vertical
   ggsave(p_1_FDR,filename = paste0('../../Results/sim_p1_FDR',graph_id,'.pdf'),width = 7,height = 3)
 }
 
@@ -164,13 +183,76 @@ for(graph_id in c(1,2)){
   names(dt_TP_Plot_melt)[3] = 'Method'
   names(dt_TP_Plot_melt)[2] = 'Effect'
   dt_TP_Plot_melt$m1 = factor(dt_TP_Plot_melt$m1,levels = c(10,100),labels = c('m1 = 10','m1 = 100'))
+  Melted_list_TP[[graph_id]] = dt_TP_Plot_melt
   p_1_TP = ggplot(dt_TP_Plot_melt,aes(x=Effect,y = TP,color = Method))+geom_line(lwd = 0.75)+geom_point(size = 0.4)+
     facet_wrap(m1~.,scales = "free") + theme_bw() +xlab(TeX("$\\lambda_{effect}$"))+xlim(c(0.5,3))+
     scale_color_manual(values=as.character(pallete[c(1,2,3,4,6,7,5)]))
+  plots_list_TP[[graph_id]] = p_1_TP
   ggsave(p_1_TP,filename = paste0('../../Results/sim_p1_TP',graph_id,'.pdf'),width = 7,height = 3)
+  
+  dt_TP_Plot_melt$Power = dt_TP_Plot_melt$TP/(10^as.numeric(dt_TP_Plot_melt$m1))
+  Melted_list_Power[[graph_id]] = dt_TP_Plot_melt$Power
+  p_1_Power = ggplot(dt_TP_Plot_melt,aes(x=Effect,y = Power,color = Method))+geom_line(lwd = 0.75)+geom_point(size = 0.4)+
+    facet_wrap(m1~.) + theme_bw() +xlab(TeX("$\\lambda_{effect}$"))+xlim(c(0.5,3))+
+    scale_color_manual(values=as.character(pallete[c(1,2,3,4,6,7,5)]))
+  
+  plots_list_Power[[graph_id]] = p_1_Power
+  
+  p_1_Power_vertical = ggplot(dt_TP_Plot_melt,aes(x=Effect,y = Power,color = Method))+geom_line(lwd = 0.75)+geom_point(size = 0.4)+
+    facet_grid(m1~.) + theme_bw(base_size = BASE_FONT_SIZE_VERTICAL) +xlab(TeX("$\\lambda_{effect}$"))+xlim(c(0.5,3))+
+    scale_color_manual(values=as.character(pallete[c(1,2,3,4,6,7,5)]))
+  plots_list_Power_vertical[[graph_id]] = p_1_Power_vertical
 }
 
+#This is a revised graph for the AOAS version
 
+library(cowplot)
+#plot_grid(plots_list_FDR[[1]]+xlab(""), NULL, plots_list_Power[[1]]+ theme(legend.position = "none",plot.margin=unit(c(5.5, 112, 5.5, 5.5), "points")) ,
+#          nrow = 3,ncol = 1,rel_heights = c(0.5, -0.04, 0.5),rel_widths = c(1.0, 1.0, 0.5))
+
+temp = plot_grid(plots_list_Power_vertical[[1]]+ theme(legend.position = "none"), plots_list_FDR_vertical[[1]] ,
+          nrow = 1,ncol =2,rel_widths = c(0.41, 0.59)) #c(0.4305, 0.5695)
+ggsave(temp,filename = paste0('../../Results/AOAS_combined.pdf'),width = 7*1.5,height = 4.5)
+
+
+temp = plot_grid(plots_list_FDR_vertical[[1]]+ theme(legend.position = "none"),
+                 plots_list_Power_vertical[[1]]+
+                   scale_color_manual(labels = c("ALDEx2-t",
+                                                 "ANCOM",
+                                                 "DACOMP-ratio",
+                                                 "DACOMP",
+                                                 "HG",
+                                                 "W-FLOW",
+                                                 "W-CSS"),
+                                      values=as.character(pallete[c(1,2,3,4,5,6,7)])),
+                 nrow = 1,ncol =2,rel_widths = c(0.4305, 0.5695))
+temp
+#labels = c("T999", "T888")
+
+AOAS_TP = Melted_list_TP[[1]]
+AOAS_TP$variable = AOAS_TP$TP/(10^as.numeric(AOAS_TP$m1))
+AOAS_FDR = Melted_list_FDR[[1]]
+AOAS_FDR$variable = AOAS_FDR$FDR
+
+AOAS_TP$value_type = 'Power'
+AOAS_FDR$value_type = 'FDR'
+names(AOAS_TP)
+names(AOAS_FDR)
+AOAS_TP = AOAS_TP[,c(1,2,3,5,6)]
+AOAS_FDR = AOAS_FDR[,c(1,2,3,5,6)]
+AOAS_FDR
+
+AOAS_melted_HLINE = AOAS_FDR[AOAS_FDR$Method == 'ALDEx2-t',]
+AOAS_melted_HLINE$variable = 0.1
+AOAS_FDR = rbind(AOAS_FDR,AOAS_melted_HLINE)
+
+AOAS_melted = rbind(AOAS_TP,AOAS_FDR)
+
+p_1_AOAS = ggplot(AOAS_melted,aes(x=Effect,y = variable,color = Method))+geom_line(lwd = 0.75)+geom_point(size = 0.4)+
+  facet_grid(m1~value_type,scales = "free") + theme_bw() +xlab(TeX("$\\lambda_{effect}$"))+
+  scale_color_manual(values=as.character(pallete[c(1,2,3,4,6,7,5)])) +ylab("") +
+  geom_hline(data = AOAS_FDR,yintercept = 0.1,color = 'black',lty = 1,alpha=0.2,lwd = 1.25)
+p_1_AOAS
 # This section is used for producing the power and FDR results, for the simulations
 # in subsection 4.2 - settings with no over dispersion
 
