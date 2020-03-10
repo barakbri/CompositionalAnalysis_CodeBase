@@ -1,23 +1,35 @@
 # This script runs the multivariate tests, over genera of taxa,
 #for the Crohn's Disease dataset example.
 
-smahal = function (X) 
+# Function for Mahalanobis distance 
+# This function was adapted from the SM of "Design of observational studies" by Paul Rosenbaum.
+# The original code for this function was adapted from http://www-stat.wharton.upenn.edu/~rosenbap/software.html
+# Under match functions for design of observational studies.
+
+smahal = function (Xmat) 
 {
-  X <- as.matrix(X)
-  n <- dim(X)[1]
-  rownames(X) <- 1:n
-  k <- dim(X)[2]
-  for (j in 1:k) X[, j] <- rank(X[, j])
-  cv <- cov(X)
+  
+  Xmat <- as.matrix(Xmat)
+  n <- dim(Xmat)[1]
+  rownames(Xmat) <- 1:n
+  k <- dim(Xmat)[2]
+  for (j in 1:k) Xmat[, j] <- rank(Xmat[, j])
+  cv <- cov(Xmat)
   vuntied <- var(1:n)
   rat <- sqrt(vuntied/diag(cv))
-  cv <- diag(rat) %*% cv %*% diag(rat)
+  if(length(rat) > 1){
+    diag_rat = diag(rat)
+  }else{
+    diag_rat = matrix(rat,nrow = 1,ncol = 1)
+  }
+  
+  cv <- diag_rat %*% cv %*% diag_rat
   out <- matrix(NA, n, n)
-  rownames(out) <- rownames(X)
-  colnames(out) <- rownames(X)
+  rownames(out) <- rownames(Xmat)
+  colnames(out) <- rownames(Xmat)
   library(MASS)
   icov <- ginv(cv)
-  for (i in 1:m) out[i, ] <- mahalanobis(X, X[i, ], icov, 
+  for (i in 1:n) out[i, ] <- mahalanobis(Xmat, Xmat[i, ], icov, 
                                          inverted = T)
   out
 }
@@ -75,10 +87,10 @@ genera_labels_to_test = names(genera_labels_to_test)
 reference_obj = temp_obj$current_selected_ref_obj #Selected in the univariate example
 #dacomp::dacomp.plot_reference_scores(reference_obj)
 
-pval_rarefied             = rep(NA,length(genera_labels_to_test))
-pval_rarefied_amalgamated = rep(NA,length(genera_labels_to_test))
-pval_ratio                = rep(NA,length(genera_labels_to_test))
-pval_ratio_amalgamated    = rep(NA,length(genera_labels_to_test))
+pval_rarefied             = rep(1,length(genera_labels_to_test))
+pval_rarefied_amalgamated = rep(1,length(genera_labels_to_test))
+pval_ratio                = rep(1,length(genera_labels_to_test))
+pval_ratio_amalgamated    = rep(1,length(genera_labels_to_test))
 
 set.seed(1)
 for(genera_id_to_test in 1:length(genera_labels_to_test)){
@@ -104,36 +116,31 @@ for(genera_id_to_test in 1:length(genera_labels_to_test)){
     X_genera_TSS_amalgamated[i,] = X_genera_TSS_amalgamated[i,]/sum(X_genera_TSS_amalgamated[i,])
   }
   
-  #X_genera_rarefied = X_genera_rarefied[,-ncol(X_genera_to_rarefy),drop = F]
-  #X_genera_TSS = X_genera_TSS[,-ncol(X_genera_to_rarefy),drop = F]
-  X_genera_rarefied_amalgamated = X_genera_rarefied_amalgamated[,-ncol(X_genera_to_rarefy),drop = F]
-  X_genera_TSS_amalgamated = X_genera_TSS_amalgamated[,-ncol(X_genera_to_rarefy),drop = F]
   
-  Dist_L1_rarefied = dist(X_genera_rarefied,method = 'manhattan')
-  Dist_L1 = dist(X_genera_TSS,method = 'manhattan')
-  Dist_L1_amalgamated_rarefied = dist(X_genera_rarefied_amalgamated,method = 'manhattan')
-  Dist_L1_amalgamated = dist(X_genera_TSS_amalgamated,method = 'manhattan')
+  X_genera_rarefied = X_genera_rarefied[,-ncol(X_genera_to_rarefy),drop = F]
+  X_genera_TSS = X_genera_TSS[,-ncol(X_genera_to_rarefy),drop = F]
   
+  ind_to_keep = which(apply(X_genera_rarefied, 2, sum)>0)
+  X_genera_rarefied = X_genera_rarefied[,ind_to_keep,drop = F]
   
-  res_permanova = vegan::adonis(Dist_L1_rarefied~Y,permutations = NR_PERMS_MULTIVARIATE)
-  pval_rarefied[genera_id_to_test] = res_permanova$aov.tab[1,6]
+  if(!is.null(X_genera_rarefied) & ncol(X_genera_rarefied) > 0 ){
+    Dist_L1_rarefied = smahal(X_genera_rarefied) 
+  }
+  Dist_L1 = smahal(X_genera_TSS)
+  
+  if(!is.null(X_genera_rarefied) & ncol(X_genera_rarefied) > 0){
+    res_permanova = vegan::adonis(Dist_L1_rarefied~Y,permutations = NR_PERMS_MULTIVARIATE)
+    pval_rarefied[genera_id_to_test] = res_permanova$aov.tab[1,6]  
+  }
   
   res_permanova = vegan::adonis(Dist_L1~Y,permutations = NR_PERMS_MULTIVARIATE)
   pval_ratio[genera_id_to_test] = res_permanova$aov.tab[1,6]
 
-  res_permanova = vegan::adonis(Dist_L1_amalgamated_rarefied~Y,permutations = NR_PERMS_MULTIVARIATE)
-  pval_rarefied_amalgamated[genera_id_to_test] = res_permanova$aov.tab[1,6]
+  res_wilcoxon = subzero::PermSumCount.test(X = X_genera_rarefied_amalgamated[,1],Y = Y,B = NR_PERMS_MULTIVARIATE,DoWald = as.integer(0),return_perms = F,disable.ties.correction = F)
+  pval_rarefied_amalgamated[genera_id_to_test] = res_wilcoxon$p.value
 
-  res_permanova = vegan::adonis(Dist_L1_amalgamated~Y,permutations = NR_PERMS_MULTIVARIATE)
-  pval_ratio_amalgamated[genera_id_to_test] = res_permanova$aov.tab[1,6]
-  
-  #
-  # 
-  # res_wilcoxon = subzero::PermSumCount.test(X = X_genera_rarefied_amalgamated[,1],Y = Y,B = NR_PERMS_MULTIVARIATE,DoWald = as.integer(0),return_perms = F,disable.ties.correction = F)
-  # pval_rarefied_amalgamated[genera_id_to_test] = res_wilcoxon$p.value
-  # 
-  # res_wilcoxon = subzero::PermSumCount.test(X = X_genera_TSS_amalgamated[,1],Y = Y,B = NR_PERMS_MULTIVARIATE,DoWald = as.integer(0),return_perms = F,disable.ties.correction = F)
-  # pval_ratio_amalgamated[genera_id_to_test] = res_wilcoxon$p.value
+  res_wilcoxon = subzero::PermSumCount.test(X = X_genera_TSS_amalgamated[,1],Y = Y,B = NR_PERMS_MULTIVARIATE,DoWald = as.integer(0),return_perms = F,disable.ties.correction = F)
+  pval_ratio_amalgamated[genera_id_to_test] = res_wilcoxon$p.value
 }
 
 pval_rarefied[is.na(pval_rarefied)] = 1
@@ -144,31 +151,33 @@ adj_pval_rarefied_amalgamated = p.adjust(pval_rarefied_amalgamated,method = 'BH'
 adj_pval_ratio = p.adjust(pval_ratio,method = 'BH')
 adj_pval_ratio_amalgamated = p.adjust(pval_ratio_amalgamated,method = 'BH')
 
+
 #%%%%%%%%%%%%%%%%%%%%%%%%%%
 #Step V: Analyze results:
 #%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-#plot the rejections by test
-plot(-log(adj_pval_rarefied),-log(adj_pval_rarefied_amalgamated))
-abline(h = -log(Q_LVL),col = 'red')
-abline(a = 0,b=1,col = 'red')
-abline(v = -log(Q_LVL),col = 'red')
 
-sum(adj_pval_rarefied<=Q_LVL) #rejections for rarefied multivariate
-sum(adj_pval_rarefied_amalgamated<=Q_LVL) #rarefied univariate
-sum(adj_pval_rarefied<=Q_LVL & adj_pval_rarefied_amalgamated >Q_LVL) # multivariate discoveries that are unique
-sum(adj_pval_rarefied<=adj_pval_rarefied_amalgamated &
-      adj_pval_rarefied_amalgamated <=Q_LVL) #pvalues lower in multivariate than in univariate
+# a list, containing the vecotrs of indices of discoveries, by method
+disc_list = list(
+  which(adj_pval_rarefied<=Q_LVL),
+  which(adj_pval_ratio<=Q_LVL),
+  which(adj_pval_rarefied_amalgamated<=Q_LVL),
+  which(adj_pval_ratio_amalgamated<=Q_LVL)
+)
 
-#discoveries for the ratio test
-sum(adj_pval_ratio<=Q_LVL)
-sum(adj_pval_ratio_amalgamated<=Q_LVL)
-sum(adj_pval_ratio<=Q_LVL & adj_pval_ratio_amalgamated >Q_LVL)
+#compute a matrix of shared discoveries. Diagonal entries are the number of discoveries of each method
+method_names_rows = c('Multi.','Ratio, Multi.','Uni.','Ratio, Uni.')
+method_names_col = method_names_rows#c('DACOMP, Mult.','DACOMP-Ratio, Mult.','DACOMP, Uni.','DACOMP-Ratio, Uni.')
+shared_disc_mat = matrix(NA,nrow = length(method_names_rows),ncol = length(method_names_rows))
+rownames(shared_disc_mat) = method_names_rows
+colnames(shared_disc_mat) = method_names_col
+for(i in 1:length(method_names_rows)){
+  for(j in i:length(method_names_rows)){
+    shared_disc_mat[i,j] = sum(disc_list[[i]] %in% disc_list[[j]])
+  }
+}
 
-#sizes of genera, in terms of OTUs
-gen_size = rep(NA,length(genera_labels_to_test))
-for(genera_id_to_test in 1:length(genera_labels_to_test))
-  gen_size[genera_id_to_test] = length(which(genera_labels == genera_labels_to_test[genera_id_to_test]))
+library(xtable)
+xtable(shared_disc_mat)
 
-median(gen_size) 
-mean(gen_size)
+
