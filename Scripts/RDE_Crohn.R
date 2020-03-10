@@ -233,11 +233,12 @@ disc_Wilcoxon_percent = disc_Wilcoxon_percent,
 disc_W_COMP = which(p.adjust(res_Wilcoxon_list[[which(median_SD_thres_Vec == 1.3)]]$p.values.test,method = 'BH')<=Q_LEVEL),
 disc_ALDEx2_iqlr_Wi = which(aldex.res.iqlr$wi.eBH <= Q_LEVEL),
 disc_ALDEx2_iqlr_We = which(aldex.res.iqlr$we.eBH <= Q_LEVEL),
-disc_Wrench = which(deseq2_res2$padj <= Q_LEVEL)
+disc_Wrench = which(deseq2_res2$padj <= Q_LEVEL),
+disc_W_COMP_Ratio = which(p.adjust(res_Wilcoxon_list[[which(median_SD_thres_Vec == 1.3)]]$p.values.test.ratio.normalization,method = 'BH')<=Q_LEVEL)
 )
 
 #compute a matrix of shared discoveries. Diagonal entries are the number of discoveries of each method
-method_names = c('ANCOM','WIL-FLOW','WIL-CSS','WIL-TSS','DACOMP','ALDEx2-W','ALDEx2-t','Wrench')
+method_names = c('ANCOM','WIL-FLOW','WIL-CSS','WIL-TSS','DACOMP','ALDEx2-W','ALDEx2-t','Wrench','DACOMP-ratio')
 shared_disc_mat = matrix(NA,nrow = length(method_names),ncol = length(method_names))
 rownames(shared_disc_mat) = method_names
 colnames(shared_disc_mat) = method_names
@@ -249,13 +250,15 @@ for(i in 1:length(method_names)){
 
 #write to file
 write.csv(shared_disc_mat,file = '../../Results/gut_cell_shared_disc_mat.csv')
+focus_ind = c(1,2,3,7,5,9)
+write.csv(shared_disc_mat[focus_ind,focus_ind],file = '../../Results/gut_cell_shared_disc_mat_for_paper.csv')
 
 
 #Plot, compare large taxa, small taxa, and different subsets of methods
 ind_to_prevalent = which(apply(X,2,mean)>=10)
 
 
-disc_list_plot = disc_list
+disc_list_plot = disc_list[1:8]
 names(disc_list_plot) = c('ANCOM','W-FLOW','W-CSS','W-TSS','DACOMP','ALDEx2-W','ALDEx2-t','Wrench')
 disc_list_plot_prevalent = disc_list_plot
 disc_list_plot_rare = disc_list_plot
