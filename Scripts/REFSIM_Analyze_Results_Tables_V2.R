@@ -208,55 +208,74 @@ for(graph_id in c(1,2)){
   plots_list_Power_vertical[[graph_id]] = p_1_Power_vertical
 }
 
+#Generate graphs with no margin
+pvt_TP_m1_10 = Melted_list_TP[[1]][Melted_list_TP[[1]]$m1 == "m1 = 10",]
+pvt_TP_m1_100 = Melted_list_TP[[1]][Melted_list_TP[[1]]$m1 == "m1 = 100",]
+pvt_FDR_m1_10 = Melted_list_FDR[[1]][Melted_list_FDR[[1]]$m1 == "m1 = 10",]
+pvt_FDR_m1_100 = Melted_list_FDR[[1]][Melted_list_FDR[[1]]$m1 == "m1 = 100",]
+names(pvt_TP_m1_10)[4] = "Value"
+names(pvt_TP_m1_100)[4] = "Value"
+names(pvt_FDR_m1_10)[4] = "Value"
+names(pvt_FDR_m1_100)[4] = "Value"
+
+pvt_TP_m1_10$Type = "Power"
+pvt_TP_m1_100$Type = "Power"
+pvt_FDR_m1_10$Type = "FDR"
+pvt_FDR_m1_100$Type = "FDR"
+
+pvt_TP_m1_10$Value = pvt_TP_m1_10$Value/10
+pvt_TP_m1_100$Value = pvt_TP_m1_100$Value/100
+
+combined_melted = rbind(pvt_TP_m1_10,pvt_TP_m1_100,pvt_FDR_m1_10,pvt_FDR_m1_100)
+
+pvt_FDR_horizontal_line = pvt_FDR_m1_10[pvt_FDR_m1_10$Method == "ANCOM",]
+pvt_FDR_horizontal_line_copy = pvt_FDR_horizontal_line
+pvt_FDR_horizontal_line_copy$m1 = "m1 = 100"
+pvt_FDR_horizontal_line = rbind(pvt_FDR_horizontal_line,pvt_FDR_horizontal_line_copy)
+
+pvt_FDR_horizontal_line$Method = as.character(pvt_FDR_horizontal_line$Method)
+pvt_FDR_horizontal_line$Method = rep("FDR = 0.1",nrow(pvt_FDR_horizontal_line))
+pvt_FDR_horizontal_line$Value= 0.1
+
+pvt_FDR_horizontal_line$alpha = 0.2
+pvt_FDR_horizontal_line$lwd = 1.25
+pvt_FDR_horizontal_line$lty = 2
+
+combined_melted$alpha = 0
+combined_melted$lwd = 0.75
+combined_melted$lty = 1
+
+combined_melted_plus_horizontal = combined_melted
+levels_to_keep = levels(combined_melted_plus_horizontal$Method)
+combined_melted_plus_horizontal$Method = as.character(combined_melted_plus_horizontal$Method)
+
+
+combined_melted_plus_horizontal = rbind(combined_melted_plus_horizontal,pvt_FDR_horizontal_line)
+combined_melted_plus_horizontal$Method = factor(x = combined_melted_plus_horizontal$Method,levels = c('ALDEx2-t','ANCOM','DACOMP-ratio','DACOMP','HG','W-FLOW','W-CSS','FDR = 0.1'))
+
+pallete_combined = c(pallete,"grey" = "grey")
+
+# p_1_Combined = ggplot(combined_melted,aes(x=Effect,y = Value,color = Method))+geom_line(lwd = 0.75)+geom_point(size = 0.4)+
+#   facet_grid(Type~m1,scales = "free_y") + theme_bw(base_size = BASE_FONT_SIZE_VERTICAL) +xlab(TeX("$\\lambda_{effect}$"))+xlim(c(0,3))+
+#   scale_color_manual(values=as.character(pallete[c(1,2,3,4,6,7,5)])) +geom_hline(yintercept = 0.1,color = 'black',lty = 1,alpha=0.2,lwd = 1.25)
+combined_melted_plus_horizontal$lty = as.factor(combined_melted_plus_horizontal$lty)
+p_1_Combined_h_line = ggplot(combined_melted_plus_horizontal,aes(x=Effect,y = Value,color = Method,lty = lty))+geom_line(lwd=0.75)+geom_point(size = 0.4)+
+  facet_grid(Type~m1,scales = "free_y") + theme_bw(base_size = BASE_FONT_SIZE_VERTICAL) +xlab(TeX("$\\lambda_{effect}$"))+xlim(c(0,3))+
+  scale_color_manual(values=as.character(pallete_combined[c(1,2,3,4,6,7,5,9)]))+ylab("")  + guides(linetype = FALSE)
+p_1_Combined_h_line+theme(panel.spacing = unit(0, "lines"))
+
+  ggsave(p_1_Combined_h_line+theme(panel.spacing = unit(0, "lines")),filename = paste0('../../Results/AOAS_combined.pdf'),width = 7*1.5,height = 4.5)
 #This is a revised graph for the AOAS version
 
 library(cowplot)
 temp = plot_grid(plots_list_FDR[[1]]+xlab(""), NULL, plots_list_Power[[1]]+ theme(legend.position = "none",plot.margin=unit(c(5.5, 112, 5.5, 5.5), "points")) ,
           nrow = 3,ncol = 1,rel_heights = c(0.5, -0.04, 0.5),rel_widths = c(1.0, 1.0, 0.5))
-ggsave(temp,filename = paste0('../../Results/AOAS_combined.pdf'),width = 7*1.5,height = 4.5)
-#temp = plot_grid(plots_list_Power_vertical[[1]]+ theme(legend.position = "none"), plots_list_FDR_vertical[[1]] ,
-#          nrow = 1,ncol =2,rel_widths = c(0.41, 0.59)) #c(0.4305, 0.5695)
-ggsave(temp,filename = paste0('../../Results/AOAS_combined.pdf'),width = 7*1.5,height = 4.5)
+ggsave(temp,filename = paste0('../../Results/AOAS_combined_attempt_1.pdf'),width = 7*1.5,height = 4.5)
+temp = plot_grid(plots_list_Power_vertical[[1]]+ theme(legend.position = "none"), plots_list_FDR_vertical[[1]] ,
+          nrow = 1,ncol =2,rel_widths = c(0.41, 0.59)) #c(0.4305, 0.5695)
+ggsave(temp,filename = paste0('../../Results/AOAS_combined_attempt_2.pdf'),width = 7*1.5,height = 4.5)
 
 
-temp = plot_grid(plots_list_FDR_vertical[[1]]+ theme(legend.position = "none"),
-                 plots_list_Power_vertical[[1]]+
-                   scale_color_manual(labels = c("ALDEx2-t",
-                                                 "ANCOM",
-                                                 "DACOMP-ratio",
-                                                 "DACOMP",
-                                                 "HG",
-                                                 "W-FLOW",
-                                                 "W-CSS"),
-                                      values=as.character(pallete[c(1,2,3,4,5,6,7)])),
-                 nrow = 1,ncol =2,rel_widths = c(0.4305, 0.5695))
-temp
-#labels = c("T999", "T888")
-
-AOAS_TP = Melted_list_TP[[1]]
-AOAS_TP$variable = AOAS_TP$TP/(10^as.numeric(AOAS_TP$m1))
-AOAS_FDR = Melted_list_FDR[[1]]
-AOAS_FDR$variable = AOAS_FDR$FDR
-
-AOAS_TP$value_type = 'Power'
-AOAS_FDR$value_type = 'FDR'
-names(AOAS_TP)
-names(AOAS_FDR)
-AOAS_TP = AOAS_TP[,c(1,2,3,5,6)]
-AOAS_FDR = AOAS_FDR[,c(1,2,3,5,6)]
-AOAS_FDR
-
-AOAS_melted_HLINE = AOAS_FDR[AOAS_FDR$Method == 'ALDEx2-t',]
-AOAS_melted_HLINE$variable = 0.1
-AOAS_FDR = rbind(AOAS_FDR,AOAS_melted_HLINE)
-
-AOAS_melted = rbind(AOAS_TP,AOAS_FDR)
-
-p_1_AOAS = ggplot(AOAS_melted,aes(x=Effect,y = variable,color = Method))+geom_line(lwd = 0.75)+geom_point(size = 0.4)+
-  facet_grid(m1~value_type,scales = "free") + theme_bw() +xlab(TeX("$\\lambda_{effect}$"))+
-  scale_color_manual(values=as.character(pallete[c(1,2,3,4,6,7,5)])) +ylab("") +
-  geom_hline(data = AOAS_FDR,yintercept = 0.1,color = 'black',lty = 1,alpha=0.2,lwd = 1.25)
-p_1_AOAS
 # This section is used for producing the power and FDR results, for the simulations
 # in subsection 4.2 - settings with no over dispersion
 
