@@ -17,5 +17,9 @@ install.packages("~/CompositionalAnalysis_CodeBase/Packages/metagenomeSeq_1.24.1
 install.packages("~/CompositionalAnalysis_CodeBase/Packages/phyloseq_1.26.1.tar.gz", repos = NULL, type = "source")
 install.packages("~/CompositionalAnalysis_CodeBase/Packages/subzero_1.0.tar.gz", repos = NULL, type = "source")
 install.packages("~/CompositionalAnalysis_CodeBase/Packages/Wrench_1.2.0.tar.gz", repos = NULL, type = "source")
+BiocManager::install('phyloseq')
 BiocManager::install('vegan')
 BiocManager::install('dada2')
+BiocManager::install('zinbwave')
+BiocManager::install('DESeq2')
+

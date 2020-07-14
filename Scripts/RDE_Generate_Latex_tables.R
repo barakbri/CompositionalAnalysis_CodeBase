@@ -3,7 +3,8 @@
 library(xtable)
 
 # tables for the gut CD data set
-dt = read.csv('../../Results/gut_cell_shared_disc_mat.csv')
+dt = read.csv('../../Results/gut_cell_shared_disc_mat_for_paper.csv')
+row.names(dt) = NULL
 xtable::xtable(dt)
 
 

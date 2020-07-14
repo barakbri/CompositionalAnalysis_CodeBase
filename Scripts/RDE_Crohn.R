@@ -176,6 +176,46 @@ sizeFactors(deseq.obj) <- normalizationFactors
 deseq2_res = DESeq2::DESeq(deseq.obj)
 deseq2_res2 = results(deseq2_res)
 
+
+#run ZINB-WAVE with deseq2
+set.seed(1)
+library(zinbwave)
+library(phyloseq)
+library(DESeq2)
+source('zinbwave_imported_functions.R')
+
+
+# Pack as phyloseq object
+reads_counts_no_names = X
+rownames(reads_counts_no_names) = NULL
+physeq = phyloseq(otu_table(t(reads_counts_no_names),taxa_are_rows = TRUE),
+                  sample_data(
+                    data.frame(
+                      grp = factor(Y),
+                      col.names = rownames(X) 
+                    )
+                  )
+)
+
+#convert to DESEQ2 object and run methods as the eval_functions.R script in in https://github.com/mcalgaro93/sc2meta
+physeq <- normDESeq2(physeq = physeq) 
+
+epsilon = 1e10
+zinbmodel <- zinbFit(Y = physeq@otu_table@.Data, 
+                     X = model.matrix(~ physeq@sam_data$grp), K = 0,
+                     epsilon = epsilon, commondispersion = TRUE, verbose = FALSE, BPPARAM = SerialParam())
+
+weights <- computeExactWeights(model = zinbmodel,x = physeq@otu_table@.Data)
+colnames(weights) <- colnames(physeq@otu_table)
+rownames(weights) <- rownames(physeq@otu_table)
+
+
+DESeq2_poscounts_zinbwave <- negBinTestDESeq2_zinbweights(physeq, normFacts = "poscounts",weights = weights)
+
+#check the rejected and collect statistics
+zinb_wave_deseq2_rejected = which(p.adjust(DESeq2_poscounts_zinbwave$pValMat[,1],method = 'BH')<=Q_LEVEL)
+
+
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # Combine results
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -196,6 +236,7 @@ res_matrix$Wrench_intersect = rep(NA,nrow(res_matrix)) #intersection with Wrench
 res_matrix$ALDEx2_W_intersect = rep(NA,nrow(res_matrix)) #intersection with ALDEx2 - two variantes
 res_matrix$ALDEx2_t_intersect = rep(NA,nrow(res_matrix)) 
 res_matrix$ref_size = rep(NA,nrow(res_matrix)) #reference set size (in number of taxa) for parameter configuration
+res_matrix$ZINB_WAVE_DESEQ2_INTERSECT = rep(NA,nrow(res_matrix)) #intersection with ZINB-Wave+DESEQ2
 
 # fill out data structure
 for(i in 1:nrow(res_matrix)){
@@ -217,6 +258,7 @@ for(i in 1:nrow(res_matrix)){
   res_matrix$Wrench_intersect[i] = sum(WCOMP_rejections%in% which(deseq2_res2$padj<=Q_LEVEL))
   res_matrix$ALDEx2_W_intersect[i] = sum(WCOMP_rejections%in% which(aldex.res.iqlr$wi.eBH<=Q_LEVEL))
   res_matrix$ALDEx2_t_intersect[i] = sum(WCOMP_rejections%in% which(aldex.res.iqlr$we.eBH<=Q_LEVEL))
+  res_matrix$ZINB_WAVE_DESEQ2_INTERSECT[i] = sum(WCOMP_rejections%in% zinb_wave_deseq2_rejected)
 }
 
 #save results
@@ -234,11 +276,12 @@ disc_W_COMP = which(p.adjust(res_Wilcoxon_list[[which(median_SD_thres_Vec == 1.3
 disc_ALDEx2_iqlr_Wi = which(aldex.res.iqlr$wi.eBH <= Q_LEVEL),
 disc_ALDEx2_iqlr_We = which(aldex.res.iqlr$we.eBH <= Q_LEVEL),
 disc_Wrench = which(deseq2_res2$padj <= Q_LEVEL),
-disc_W_COMP_Ratio = which(p.adjust(res_Wilcoxon_list[[which(median_SD_thres_Vec == 1.3)]]$p.values.test.ratio.normalization,method = 'BH')<=Q_LEVEL)
+disc_W_COMP_Ratio = which(p.adjust(res_Wilcoxon_list[[which(median_SD_thres_Vec == 1.3)]]$p.values.test.ratio.normalization,method = 'BH')<=Q_LEVEL),
+disc_ZINBWAVE_DESEQ2 = zinb_wave_deseq2_rejected
 )
 
 #compute a matrix of shared discoveries. Diagonal entries are the number of discoveries of each method
-method_names = c('ANCOM','WIL-FLOW','WIL-CSS','WIL-TSS','DACOMP','ALDEx2-W','ALDEx2-t','Wrench','DACOMP-ratio')
+method_names = c('ANCOM','WIL-FLOW','WIL-CSS','WIL-TSS','DACOMP','ALDEx2-W','ALDEx2-t','Wrench','DACOMP-ratio','ZINBWAVE-DESEQ2')
 shared_disc_mat = matrix(NA,nrow = length(method_names),ncol = length(method_names))
 rownames(shared_disc_mat) = method_names
 colnames(shared_disc_mat) = method_names
@@ -250,7 +293,7 @@ for(i in 1:length(method_names)){
 
 #write to file
 write.csv(shared_disc_mat,file = '../../Results/gut_cell_shared_disc_mat.csv')
-focus_ind = c(1,2,3,7,5,9)
+focus_ind = c(1,2,3,7,5,9,10)
 write.csv(shared_disc_mat[focus_ind,focus_ind],file = '../../Results/gut_cell_shared_disc_mat_for_paper.csv')
 
 
