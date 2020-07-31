@@ -91,6 +91,7 @@ pval_rarefied             = rep(1,length(genera_labels_to_test))
 pval_rarefied_amalgamated = rep(1,length(genera_labels_to_test))
 pval_ratio                = rep(1,length(genera_labels_to_test))
 pval_ratio_amalgamated    = rep(1,length(genera_labels_to_test))
+Nr_Samples_with_zero_in_genus = rep(1,length(genera_labels_to_test))
 
 set.seed(1)
 for(genera_id_to_test in 1:length(genera_labels_to_test)){
@@ -101,6 +102,7 @@ for(genera_id_to_test in 1:length(genera_labels_to_test)){
   ind_genera = which(genera_labels == genera_labels_to_test[genera_id_to_test])
   ind_reference = ind_reference[!(ind_reference %in% ind_genera)]
   total_counts_in_reference = apply(X[,ind_reference],1,sum)
+  Nr_Samples_with_zero_in_genus[genera_id_to_test] = sum(apply(X[,ind_genera],1,sum)==0)
   
   X_genera_to_rarefy             = cbind(X[,ind_genera],total_counts_in_reference)
   X_genera_to_rarefy_amalgamated = cbind(apply(X[,ind_genera],1,sum),total_counts_in_reference)
@@ -180,4 +182,7 @@ for(i in 1:length(method_names_rows)){
 library(xtable)
 xtable(shared_disc_mat)
 
-
+length(Nr_Samples_with_zero_in_genus)
+sum(Nr_Samples_with_zero_in_genus==0)
+sum(Nr_Samples_with_zero_in_genus>=10)
+sum(Nr_Samples_with_zero_in_genus>=30)
