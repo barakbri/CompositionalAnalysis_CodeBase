@@ -182,7 +182,20 @@ for(i in 1:length(method_names_rows)){
 library(xtable)
 xtable(shared_disc_mat)
 
+#summary statistics for the number of zeros, for section 2
 length(Nr_Samples_with_zero_in_genus)
 sum(Nr_Samples_with_zero_in_genus==0)
 sum(Nr_Samples_with_zero_in_genus>=10)
 sum(Nr_Samples_with_zero_in_genus>=30)
+
+output_discoveries = data.frame(Genera_Names = genera_labels_to_test,
+                                Discovered_by_Multivariate = rep(F,length(genera_labels_to_test)),
+                                Discovered_by_Multivariate_Ratio = rep(F,length(genera_labels_to_test)),
+                                Discovered_by_Univariate = rep(F,length(adj_pval_rarefied_amalgamated)),
+                                Discovered_by_Univariate_Ratio = rep(F,length(genera_labels_to_test)))
+output_discoveries$Discovered_by_Multivariate[which(adj_pval_rarefied<=Q_LVL)] = T
+output_discoveries$Discovered_by_Multivariate_Ratio[which(adj_pval_ratio<=Q_LVL)] = T
+output_discoveries$Discovered_by_Univariate[which(adj_pval_rarefied<=Q_LVL)] = T
+output_discoveries$Discovered_by_Univariate_Ratio[which(adj_pval_ratio_amalgamated<=Q_LVL)] = T
+
+write.csv(output_discoveries,file = '../../Results/multivariate_discoveries.csv',quote = F,row.names = F)

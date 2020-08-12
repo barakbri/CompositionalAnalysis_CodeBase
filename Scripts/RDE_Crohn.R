@@ -375,4 +375,33 @@ for(i in 1:8){
 }
 dev.off()
 
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+#output discoveries to file
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+#BiocManager::install('dada2')
+library(dada2); packageVersion("dada2")
+library(vegan)
+NR_PERMS_MULTIVARIATE = 5000
+Q_LVL = 0.1
+
+set.seed(1) # Initialize random number generator for reproducibility
+seqs = colnames(X)
+
+taxa <- assignTaxonomy(seqs,
+                       "../Crohn/gg_13_8_train_set_97.fa.gz",
+                       multithread=T,
+                       verbose = T,
+                       minBoot = 80)
+
+dt_taxonomy = (unname(taxa))
+colnames(dt_taxonomy) = paste0('L',1:7)
+discoveries_matrix_for_output = matrix(F,nrow = nrow(dt_taxonomy),ncol = length(method_names))
+colnames(discoveries_matrix_for_output) = method_names
+for(i in 1:length(method_names)){
+  discoveries_matrix_for_output[disc_list[[i]],i] = T
+}
+
+output_univariate_discoveries = cbind(seqs,dt_taxonomy,discoveries_matrix_for_output)
+
+write.csv(output_univariate_discoveries,file = '../../Results/univariate_discoveries.csv',quote = F,row.names = F)
