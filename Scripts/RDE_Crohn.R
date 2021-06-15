@@ -71,69 +71,67 @@ intersect_with_ANCOM = function(ANCOM_res,dacomp_rejections){
 set.seed(1)
 library(subzero)
 library(dacomp)
-median_SD_thres_Vec = seq(1.2,1.4,0.1) 
 PS_value = 1 # Pseudocount value used
-parameter_matrix = expand.grid(median_SD_thres_Vec = median_SD_thres_Vec)
 
-current_selected_ref_obj = NULL
-
-ref_list = list() #used to store referecne objects
-res_Wilcoxon_list = list() #used to store results with Wilcoxon rank sum tests
-res_Welch_list = list() # used to store results with Welch t-tests
 set.seed(1)
 
 #stored file path
-filepath_i = function(i){return(paste0('../../Results/Gut_temp_v2_file_',i,'.RData'))}
+filepath = '../../Results/Gut_temp_v2_file_dacomp.RData'
 
-#iterate over parameters
-for(i in 1:nrow(parameter_matrix)){
-  set.seed(1) # for reproducability of permutations
-  current_thres = parameter_matrix$median_SD_thres_Vec[i]
-  
-  # select references
-  print(paste0('Selecting references , thres = ',current_thres))
-  current_selected_ref_obj = dacomp.select_references(X = X,median_SD_threshold = current_thres,maximal_TA = 200,Pseudo_Count_used = PS_value,  verbose = F)
-  
+# select references
 
-  ref_list[[i]] =   current_selected_ref_obj
-  
-  # run DACOMP tests
-  res_perm_Wilcoxon = dacomp.test(X = X,y = Y,ind_reference_taxa = current_selected_ref_obj$selected_references,
-                                  verbose = F,
-                                  q = Q_LEVEL,
-                                  compute_ratio_normalization = T,
-                                  test = DACOMP.TEST.NAME.WILCOXON,
-                                                 nr_perm = NR.PERMS)
-  
-  res_perm_Welch= dacomp.test(X = X,y = Y,ind_reference_taxa = current_selected_ref_obj$selected_references,
-                                  verbose = F,
-                                  q = Q_LEVEL,
-                                  compute_ratio_normalization = T,
-                                  test = DACOMP.TEST.NAME.WELCH_LOGSCALE,
-                                  nr_perm = NR.PERMS)
-  
-  res_Wilcoxon_list[[i]] = res_perm_Wilcoxon
-  res_Welch_list[[i]] = res_perm_Welch
-  temp_obj = list(current_selected_ref_obj = current_selected_ref_obj,
-                  res_perm_Wilcoxon = res_perm_Wilcoxon,
-                  res_perm_Welch = res_perm_Welch)
-  current_temp_filepath_i = filepath_i(i)
-  save(temp_obj,file = current_temp_filepath_i)
-}
+print(paste0('Selecting references'))
+ref_obj = dacomp.select_references(X = X,median_SD_threshold = 1,maximal_TA = 200,Pseudo_Count_used = PS_value,  verbose = F)
+nr_taxa_to_select_as_ref = sum(ref_obj$min_abundance_over_the_sorted<=100)+1
+Scrit = sort(ref_obj$scores)[nr_taxa_to_select_as_ref] #1.163254 
+Selected_references = which(ref_obj$scores<=Scrit)
+
+library(latex2exp)
+pdf('../../Results/Gut_Scrit_select.pdf',width = 5,height = 5/3,pointsize = 8)
+par(mfrow = c(1,3))
+plot(sort(ref_obj$scores),ref_obj$min_abundance_over_the_sorted,xlab = TeX("S_{crit}"),ylab = "Min. counts in reference",pch=20,cex=0.3,main = 'A')
+abline(v = Scrit,col = 'red',lty=2)
+plot(sort(ref_obj$scores),ref_obj$min_abundance_over_the_sorted,xlim = c(1,1.5),xlab = TeX("S_{crit}"),ylab = "Min. counts in reference",ylim = c(0,300),pch=20,cex=0.3,main = 'B')
+abline(v = Scrit,col = 'red',lty=2)
+hist(ref_obj$scores,main = 'C',breaks = 50,xlab = 'Reference selection scores')
+dev.off()
+par(mfrow = c(1,1))
 
 
-set.seed(1)
-#load
-ref_list = list()
-res_Wilcoxon_list = list()
-res_Welch_list = list()
-for(i in 1:nrow(parameter_matrix)){
-  print(paste0('Loading case ',i))
-  load(filepath_i(i))
-  ref_list[[i]] = temp_obj$current_selected_ref_obj
-  res_Wilcoxon_list[[i]] = temp_obj$res_perm_Wilcoxon
-  res_Welch_list[[i]] = temp_obj$res_perm_Welch
-}
+pdf('../../Results/Gut_Scrit_select_for_paper.pdf',height = 3.5,pointsize = 8)
+par(mfrow = c(1,2))
+plot(sort(ref_obj$scores),ref_obj$min_abundance_over_the_sorted,xlab = TeX("S_{crit}"),ylab = "Min. counts in reference",pch=20,cex=0.1,main = 'A')
+abline(v = Scrit,col = 'red',lty=2)
+plot(sort(ref_obj$scores),ref_obj$min_abundance_over_the_sorted,xlim = c(1,1.5),xlab = TeX("S_{crit}"),ylab = "Min. counts in reference",ylim = c(0,300),pch=20,cex=0.1,main = 'B')
+abline(v = Scrit,col = 'red',lty=2)
+dev.off()
+par(mfrow = c(1,1))
+
+pdf('../../Results/Gut_Scrit_dist.pdf',height = 3.5)
+hist(ref_obj$scores,breaks = 50,xlab = 'Reference selection scores')
+dev.off()
+
+# run DACOMP tests
+res_perm_Wilcoxon = dacomp.test(X = X,y = Y,ind_reference_taxa = Selected_references,
+                                verbose = T,
+                                q = Q_LEVEL,
+                                compute_ratio_normalization = T,
+                                test = DACOMP.TEST.NAME.WILCOXON,disable_DSFDR = T,
+                                nr_perm = NR.PERMS)
+
+res_perm_Welch= dacomp.test(X = X,y = Y,ind_reference_taxa = Selected_references,
+                            verbose = T,
+                            q = Q_LEVEL,
+                            compute_ratio_normalization = T,
+                            test = DACOMP.TEST.NAME.WELCH_LOGSCALE,disable_DSFDR = T,
+                            nr_perm = NR.PERMS)
+
+temp_obj = list(ref_obj = ref_obj,
+                res_perm_Wilcoxon = res_perm_Wilcoxon,
+                res_perm_Welch = res_perm_Welch,
+                Scrit = Scrit,
+                Selected_references = Selected_references)
+save(temp_obj,file = filepath)
 
 
 #W-CSS
@@ -163,14 +161,17 @@ aldex.res.iqlr <- aldex(t(X), as.character(Y), mc.samples=128, denom="iqlr",
 aldex.res.zero <- aldex(t(X), as.character(Y), mc.samples=128, denom="zero",
                         test="t", effect=FALSE,verbose = T)
 #run Wrench
+
 library(Wrench)
 W <- wrench( t(X), condition=Y  )
 compositionalFactors <- W$ccf
 normalizationFactors <- W$nf
 
 library(DESeq2)
-deseq.obj <- DESeq2::DESeqDataSetFromMatrix(countData = t(X),
-                                            DataFrame(Y = factor(Y)),
+deseq_counts = t(X)
+deseq_cols_data = DataFrame(Y = factor(Y))
+deseq.obj <- DESeq2::DESeqDataSetFromMatrix(countData = deseq_counts,
+                                            deseq_cols_data,
                                             ~ Y )
 sizeFactors(deseq.obj) <- normalizationFactors
 deseq2_res = DESeq2::DESeq(deseq.obj)
@@ -203,13 +204,13 @@ physeq <- normDESeq2(physeq = physeq)
 epsilon = 1e10
 zinbmodel <- zinbFit(Y = physeq@otu_table@.Data, 
                      X = model.matrix(~ physeq@sam_data$grp), K = 0,
-                     epsilon = epsilon, commondispersion = TRUE, verbose = FALSE, BPPARAM = SerialParam())
+                     epsilon = epsilon, commondispersion = TRUE, verbose = FALSE, BPPARAM = BiocParallel::SerialParam())
 
 weights <- computeExactWeights(model = zinbmodel,x = physeq@otu_table@.Data)
 colnames(weights) <- colnames(physeq@otu_table)
 rownames(weights) <- rownames(physeq@otu_table)
 
-
+library(BiocParallel)
 DESeq2_poscounts_zinbwave <- negBinTestDESeq2_zinbweights(physeq, normFacts = "poscounts",weights = weights)
 
 #check the rejected and collect statistics
@@ -221,8 +222,7 @@ zinb_wave_deseq2_rejected = which(p.adjust(DESeq2_poscounts_zinbwave$pValMat[,1]
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 #Combine to get results, by parameter value - compare different parameter values to different methods
-res_matrix = parameter_matrix # each row is a parameter configuration
-res_matrix = as.data.frame(res_matrix)
+res_matrix = data.frame(NA,row.names = 'Results')
 res_matrix$nr_rejected_W = rep(NA,nrow(res_matrix)) #number of rejections - DACOMP with Wilcoxon (rarefaction- the default)
 res_matrix$nr_rejected_W_dsfdr = rep(NA,nrow(res_matrix)) #number of rejections - DACOMP with Wilcoxon - DSFDR adjustment for multiplicity
 res_matrix$nr_rejected_W_ratio = rep(NA,nrow(res_matrix)) #number of rejections - DACOMP with Wilcoxon - normalization by ratio
@@ -238,6 +238,9 @@ res_matrix$ALDEx2_t_intersect = rep(NA,nrow(res_matrix))
 res_matrix$ref_size = rep(NA,nrow(res_matrix)) #reference set size (in number of taxa) for parameter configuration
 res_matrix$ZINB_WAVE_DESEQ2_INTERSECT = rep(NA,nrow(res_matrix)) #intersection with ZINB-Wave+DESEQ2
 
+res_Wilcoxon_list = list(res_perm_Wilcoxon)
+res_Welch_list = list(res_perm_Welch)
+ref_list = list(ref_obj)
 # fill out data structure
 for(i in 1:nrow(res_matrix)){
   res_matrix$nr_rejected_W[i] = length(which(p.adjust(res_Wilcoxon_list[[i]]$p.values.test,method = 'BH')<=Q_LEVEL))
@@ -272,11 +275,11 @@ disc_vec_ANCOM = which(colnames(ANCOM_otu_dat)%in% ANCOM_default_res$detected),
 disc_Wilcoxon_corrected = disc_Wilcoxon_corrected ,
 disc_Wilcoxon_Paulson = disc_Wilcoxon_Paulson,
 disc_Wilcoxon_percent = disc_Wilcoxon_percent,
-disc_W_COMP = which(p.adjust(res_Wilcoxon_list[[which(median_SD_thres_Vec == 1.3)]]$p.values.test,method = 'BH')<=Q_LEVEL),
+disc_W_COMP = which(p.adjust(res_Wilcoxon_list[[1]]$p.values.test,method = 'BH')<=Q_LEVEL),
 disc_ALDEx2_iqlr_Wi = which(aldex.res.iqlr$wi.eBH <= Q_LEVEL),
 disc_ALDEx2_iqlr_We = which(aldex.res.iqlr$we.eBH <= Q_LEVEL),
 disc_Wrench = which(deseq2_res2$padj <= Q_LEVEL),
-disc_W_COMP_Ratio = which(p.adjust(res_Wilcoxon_list[[which(median_SD_thres_Vec == 1.3)]]$p.values.test.ratio.normalization,method = 'BH')<=Q_LEVEL),
+disc_W_COMP_Ratio = which(p.adjust(res_Wilcoxon_list[[1]]$p.values.test.ratio.normalization,method = 'BH')<=Q_LEVEL),
 disc_ZINBWAVE_DESEQ2 = zinb_wave_deseq2_rejected
 )
 
@@ -356,24 +359,6 @@ is_rejected = is_rejected[,(which(apply(is_rejected,2,sum)>0))]
 ord = order(apply(is_rejected,2,sum),decreasing = T)
 is_rejected = is_rejected[,ord]
 
-#an additional plot showing shared taxa
-library(yarrr)
-pallete = yarrr::piratepal("basel",
-                 plot.result = FALSE,
-                 trans = 0)[-c(8)]          # Slightly transparent
-
-op <- par(bg = "#f4f5f7")
-
-pdf(file = '../../Results/Shared_Plot.pdf',height = 6,width = 7)
-plot(c(-80, ncol(is_rejected)), c(0, 8), type = "n", xlab = "", ylab = "",
-     main = "")
-reorder_vec = c(3,1,4,2,5,6,7,8)
-for(i in 1:8){
-  p = which(is_rejected[reorder_vec[i],]==1)
-  rect(xleft = p-1,xright = p,ybottom = i-1,ytop = i,col = pallete[i],border = NA)  
-  text(x=-50,y= i-0.5,labels = names(disc_list_plot)[reorder_vec[i]])
-}
-dev.off()
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #output discoveries to file
@@ -403,5 +388,28 @@ for(i in 1:length(method_names)){
 }
 
 output_univariate_discoveries = cbind(seqs,dt_taxonomy,discoveries_matrix_for_output)
+output_univariate_discoveries = as.data.frame(output_univariate_discoveries)
 
+effect_string = rep(NA,nrow(output_univariate_discoveries))
+effect_direction_string = rep(NA,nrow(output_univariate_discoveries))
+sum_ref = apply(X[,Selected_references],1,sum)
+for(taxon_id in 1:nrow(output_univariate_discoveries)){
+  #taxon_id = 1
+  sum_ref_for_compute = sum_ref
+  if(taxon_id %in% Selected_references){
+    sum_ref_for_compute = sum_ref_for_compute - X[,taxon_id]
+  }
+  ratio = X[,taxon_id]/(X[,taxon_id]+sum_ref_for_compute)
+  ratio_CD = mean(ratio[Y==1])
+  ratio_H = mean(ratio[Y==0])
+  if(ratio_CD>=ratio_H){
+    effect_direction_string[taxon_id] = 'CD>=H'
+    effect_string[taxon_id] = paste0('CD>=H;mean ratio CD : ',(ratio_CD),' ;mean ratio H : ',(ratio_H))
+  }else{
+    effect_direction_string[taxon_id] = 'H>CD'
+    effect_string[taxon_id] = paste0('H>CD;mean ratio CD : ',(ratio_CD),' ;mean ratio H : ',(ratio_H))
+  }
+}
+output_univariate_discoveries$effect_direction = effect_direction_string
+output_univariate_discoveries$effect = effect_string
 write.csv(output_univariate_discoveries,file = '../../Results/univariate_discoveries.csv',quote = F,row.names = F)

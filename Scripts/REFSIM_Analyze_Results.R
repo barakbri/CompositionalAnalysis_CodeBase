@@ -1,7 +1,7 @@
 # This script is used to compile the aggregated results (across reps of data generations)
 # for the different scenarios to to file, giving the mean (power, FDR) and sd (power, FDR) of the different scenarios
 
-BATCH_VEC = c(1:41) #scenarios to run over
+BATCH_VEC = c(1:47) #scenarios to run over
 source(paste0('REFSIM_GenerateSettings_Index.R')) #scenario library - scenario names will be used from here
 RESULTS_DIR = paste0("../../Results/") # where results will be outputed to 
 

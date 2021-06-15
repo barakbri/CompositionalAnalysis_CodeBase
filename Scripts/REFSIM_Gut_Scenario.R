@@ -24,7 +24,8 @@ REFSIM_generate_Gut_TYPE_Scenario = function(label = "MISSING_LABEL", #label for
                                Const_Size_Variant = F, #for a variant with some taxa going up and some going down, but for null taxa, marginal distribtuions are the same
                                Const_Size_Effect_Multiplier = 2, # Parameters for Const size variant - not used in simulations 
                                Percent_to_add = 0.5,
-                               Reads_Multiplier_Group_1 = 1 # for creating a confounder effect between the number of reads and the group labeling
+                               Reads_Multiplier_Group_1 = 1, # for creating a confounder effect between the number of reads and the group labeling
+                               NB_dispersion_extra_variance_as_part_mu = NULL
                                ){
   #Pack scenario definitions into a list object
   m = ncol(Gut_Flow_data$counts_matrix)
@@ -66,6 +67,7 @@ REFSIM_generate_Gut_TYPE_Scenario = function(label = "MISSING_LABEL", #label for
   ret$Const_Size_Effect_Multiplier = Const_Size_Effect_Multiplier
   ret$Percent_to_add = Percent_to_add
   ret$Reads_Multiplier_Group_1 = Reads_Multiplier_Group_1
+  ret$NB_dispersion_extra_variance_as_part_mu = NB_dispersion_extra_variance_as_part_mu
   class(ret) = REFSIM_GUT_TYPE_SCENARIO_DEF
   return(ret)
 }
@@ -96,6 +98,7 @@ REFSIM_generate_data_for_Gut_Type_Scenario = function(setting_def){
   select_diff_abundant_scalar = setting_def$select_diff_abundant_scalar
   Percent_to_add = setting_def$Percent_to_add
   Reads_Multiplier_Group_1 = setting_def$Reads_Multiplier_Group_1
+  NB_dispersion_extra_variance_as_part_mu = setting_def$NB_dispersion_extra_variance_as_part_mu
   
   # allocate memory for returned types
   X_unsampled = matrix(NA,nrow = setting_def$n0 + setting_def$n1,ncol = setting_def$m)
@@ -138,7 +141,15 @@ REFSIM_generate_data_for_Gut_Type_Scenario = function(setting_def){
     Total_Original_Counts[i] = sum(X_unsampled[i,])
     
     Confounder_Multiplier = (1*(Y[i]==0)) + Reads_Multiplier_Group_1 * (Y[i]==1)
-    counts_to_sample = rpois(1,poisson_mean_reads * Confounder_Multiplier) #pick the observed sampling depth
+    if(is.null(NB_dispersion_extra_variance_as_part_mu)){
+      counts_to_sample = rpois(1,poisson_mean_reads * Confounder_Multiplier) #pick the observed sampling depth      
+    }else{
+      mu_to_use = poisson_mean_reads * Confounder_Multiplier
+      variance_to_add =   mu_to_use*NB_dispersion_extra_variance_as_part_mu
+      size_to_use =    mu_to_use^2/variance_to_add
+      counts_to_sample = rnbinom(n = 1,size = size_to_use,mu = mu_to_use) #pick the observed sampling depth            
+    }
+    
     
     prob_vector = X_unsampled[i,]/sum(X_unsampled[i,])
     X[i,] = rmultinom(1,counts_to_sample , prob = prob_vector) # Do actual sampling

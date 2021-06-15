@@ -92,7 +92,6 @@ if(MODE_ANALYZE){
                               rejections = rep(NA,nr_rows_in_results), #number of rejections by dacomp, with wilcoxon and subsampling
                               shared = rep(NA,nr_rows_in_results), #number of rejections DACOMP shared with ANCOM
                               median_lambda = rep(NA,nr_rows_in_results), #median lambda, across tested taxa
-                              subset_disc = rep(NA,nr_rows_in_results), #number of discoveries for DACOMP, when using only 2/3 of the data (picked at random)
                               rejections_division = rep(NA,nr_rows_in_results), #number of discoveries, for DACOMP with Wilcoxon and normalization by division
                               rejections_Welch = rep(NA,nr_rows_in_results),  #number of discoveries, for DACOMP with Welch t test
                               rejections_division_Welch = rep(NA,nr_rows_in_results),#number of discoveries, for DACOMP with Welch t test and normalization by division
@@ -101,7 +100,12 @@ if(MODE_ANALYZE){
                               Wrench = rep(NA,nr_rows_in_results), #number of discoveries for Wrench, with DESEQ2 tests
                               shared_ALDEx2_Wilcoxon = rep(NA,nr_rows_in_results), #number of discoveries shared between DACOMP (wilcoxon, rarefaction) and ALDEx2/ Wrench
                               shared_ALDEx2_Welch = rep(NA,nr_rows_in_results),
-                              shared_Wrench = rep(NA,nr_rows_in_results)
+                              shared_Wrench = rep(NA,nr_rows_in_results),
+                              nr_contamination_ref  = rep(NA,nr_rows_in_results),
+                              nr_contamination_ref_cleaned  = rep(NA,nr_rows_in_results),
+                              nr_removed_from_ref  = rep(NA,nr_rows_in_results),
+                              nr_rejections_cleaned  = rep(NA,nr_rows_in_results),
+                              nr_rejections_cleaned_shared  = rep(NA,nr_rows_in_results)
                               )
   # iterate over pairs of body sites
   for(site1 in 1:(length(Valid_Body_Sites)-1)){
@@ -126,7 +130,7 @@ if(MODE_ANALYZE){
         nr_vanilla_unique_ANCOM = length(results_to_save$intersect_with_ANCOM$unique_ANCOM)  
         
         
-        median_lambda = median(results_to_save$res_dsfdr$min_value_array)
+        median_lambda = median(results_to_save$res_dsfdr$lambda)
         if(is.null(median_lambda))
           median_lambda = NA
         
@@ -149,9 +153,9 @@ if(MODE_ANALYZE){
                         nr_Wilcoxon_rejections_norm_CSS,
                         nr_vanilla_shared + nr_vanilla_unique_ANCOM,
                         ref_size_selected,
-                        nr_vanilla_shared+nr_vanilla_unique, nr_vanilla_shared,
+                        nr_vanilla_shared+nr_vanilla_unique,
+                        nr_vanilla_shared,
                         median_lambda,
-                        results_to_save$nr_rejections_subset,
                         length(results_to_save$rejected_by_pval_division),
                         length(results_to_save$rejected_by_pval_Welch),
                         length(results_to_save$rejected_by_pval_division_Welch),
@@ -160,7 +164,12 @@ if(MODE_ANALYZE){
                         length(results_to_save$wrench_rejected),
                         length(which(results_to_save$rejected.iqlr.wi %in% results_to_save$rejected_by_pval)),
                         length(which(results_to_save$rejected.iqlr.we %in% results_to_save$rejected_by_pval)),
-                        length(which(results_to_save$wrench_rejected %in% results_to_save$rejected_by_pval))
+                        length(which(results_to_save$wrench_rejected %in% results_to_save$rejected_by_pval)),
+                        results_to_save$nr_contamination_ref,
+                        results_to_save$nr_contamination_ref_cleaned,
+                        results_to_save$nr_removed_from_ref,
+                        ifelse(!is.null(results_to_save$nr_rejections_cleaned),yes = results_to_save$nr_rejections_cleaned,no = NA),
+                        sum(which(results_to_save$res_dsfdr_cleaned$p.values.test.adjusted<= Q) %in% results_to_save$rejected_by_pval)
                         )
       
       print(paste0('Inserting row ',row_pointer,' with length : ',length(row_to_insert)))

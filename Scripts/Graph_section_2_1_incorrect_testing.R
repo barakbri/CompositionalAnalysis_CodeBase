@@ -2,12 +2,18 @@
 # This script compares several approaches for tests of differential abundance.
 
 #Output file:
-pdf(file = '../../Results/Incorrect_Tests.pdf', width = 7*1.5-1, height = 7/3*1.5 )
-par(mfrow = c(1,3))
+
 set.seed(1)
 library(subzero)
 #These are the effects for which we will compare, see paper for definition of the effect size
 effect_grid = c(0.25, 0.33, 0.5) 
+DO_WELCH_INSTEAD=T
+if(DO_WELCH_INSTEAD){
+  pdf(file = '../../Results/Incorrect_Tests_Welch.pdf', width = 7*1.5-1, height = 7/3*1.5 )
+}else{
+  pdf(file = '../../Results/Incorrect_Tests.pdf', width = 7*1.5-1, height = 7/3*1.5 )
+}
+par(mfrow = c(1,3))
 
 for(e_i in 1:3){ # For each effect, run sim:
   reps = 10000 #number of repetitions
@@ -37,9 +43,22 @@ for(e_i in 1:3){ # For each effect, run sim:
     Y_wilcox = c(rep(0,n_X),rep(1,n_Y))
     X_wilcox_NewDef = c(values_X, values_Y)
     
-    res_PC = subzero::PermSumCount.test(X = X_wilcox_PC, Y = Y_wilcox, B = 1000)
+    if(!DO_WELCH_INSTEAD){
+      res_PC = subzero::PermSumCount.test(X = X_wilcox_PC, Y = Y_wilcox, B = 1000)
+    }else{
+      res_PC = t.test(X_wilcox_PC[Y_wilcox==0],X_wilcox_PC[Y_wilcox==1])
+    }
+    
+   
     pval.vec.PC[r] = res_PC$p.value  
-    res_NewDef = subzero::PermSumCount.test(X = X_wilcox_NewDef, Y = Y_wilcox, B = 1000)
+    
+    if(!DO_WELCH_INSTEAD){
+      res_NewDef = subzero::PermSumCount.test(X = X_wilcox_NewDef, Y = Y_wilcox, B = 1000)
+    }else{
+      res_NewDef = t.test(X_wilcox_NewDef[Y_wilcox==0],X_wilcox_NewDef[Y_wilcox==1])
+    }
+    
+  
     pval.vec.NewDef[r] = res_NewDef$p.value
   }
   #plot graph:

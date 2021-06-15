@@ -11,7 +11,7 @@ library(DESeq2)
 source(paste0('REFSIM_GenerateSettings_Index.R')) # scenario library
 
 #Parameters
-PARAM_SCENARIOS = 1:41 # Scenarios to be run
+PARAM_SCENARIOS = 1:47 # Scenarios to be run
 PARAM_REPS = 100 #number of repetitions per scenario
 PARAM_Q_LEVEL = 0.1 #FDR level
 

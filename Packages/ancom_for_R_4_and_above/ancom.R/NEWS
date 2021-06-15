@@ -1,0 +1,30 @@
+
+===========================
+VERSION HISTORY:
+
+Version 1.1, 2015-07-09
+- Changed to use stats::kruskal.test or exactRankTests::wilcox.exact 
+  (both approximate tests) due to computation speed.
+- Changed maintainer email (job change)
+
+Version 1.1, 2015-06-11
+- Updated testing to use kruskal_test form package coin.
+
+Version 1.0, 2015-06-5
+- Initial creation of package ancom.R (not on CRAN)
+
+===========================
+Authors / Maintainers:
+Siddhartha Mandal (author)
+Norwegian Institute of Public Health, Oslo, Norway
+
+Casey M. Jelsema (author, maintainer)
+Biostatistics Branch
+National Intitute of Environmental Health Sciences
+<jelsema.casey@gmail.com>
+
+
+
+
+
+

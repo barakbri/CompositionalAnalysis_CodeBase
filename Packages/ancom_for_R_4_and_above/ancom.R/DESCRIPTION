@@ -1,0 +1,14 @@
+Package: ancom.R
+Title: Implementation of the ANCOM method
+Version: 1.1-3
+Depends: R (>= 3.0.2), shiny, foreach, doParallel
+Imports: methods, stringr, stats, exactRankTests, ggplot2, openxlsx
+Date: 2015-07-09
+Description: Runs the ANCOM method.
+Author: Casey M. Jelsema, Siddhartha Mandal
+Maintainer: Casey M. Jelsema <casey.jelsema@nih.gov>
+BuildVignettes: false
+LazyLoad: yes
+License: GPL-3
+NeedsCompilation: no
+Packaged: 2015-07-14 15:23:20 UTC; statman
