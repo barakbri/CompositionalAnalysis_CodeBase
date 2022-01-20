@@ -273,21 +273,6 @@ output_univariate_discoveries$WIL.FLOW)
 
 TAXON_PREVALENCE_RANK_TO_PICK = 1
 
-#     ranks_of_prevalence = rank(prevalence[reference_obj$selected_references],ties.method = 'first')
-#reference_obj$selected_references[which(ranks_of_prevalence==length(ranks_of_prevalence))]
-#reference_obj$selected_references[which(ranks_of_prevalence==length(ranks_of_prevalence)-1)]
-#reference_obj$selected_references[which(ranks_of_prevalence==length(ranks_of_prevalence)-2)]
-#reference_obj$selected_references[which(ranks_of_prevalence==length(ranks_of_prevalence)-3)]
-# > genera_labels[3]
-#[1] "g__Blautia" #1 
-#> genera_labels[88]
-#[1] "g__Odoribacter" #0.9578947 
-#>genera_labels[126]
-# "g__"  0.7473684 
-#>genera_labels[124] "g__" #0.71
-
-
-
 X_rarefied = vegan::rrarefy(X,sample = min(apply(X,1,sum)))  
 
 res_unifrac = run_configuration_with_raw(method = 'unifrac',remove_uni_discoveries = F,modes = 1:4)
@@ -476,23 +461,25 @@ abline(v=0,col='blue',lty=2)
 dev.off()
 par(mfrow=c(1,1))
 
-
+col_vector_GrayScale = as.character(Y+1)
+col_vector_GrayScale[col_vector_GrayScale == '1'] = 'dimgray'
+col_vector_GrayScale[col_vector_GrayScale == '2'] = 'black'
 
 pdf(file = '../../Results/PCoA_examples_for_paper.pdf',height = 6,width = 6)
 par(mfrow=c(2,2))
 plot(res_BC[[3]]$X_1, 
      res_BC[[3]]$Y_1, 
-     col = Y+1,asp=ASP, pch=PCH_vec, cex = 0.8, xlab = 'PCOA axis 1',
+     col = col_vector_GrayScale,asp=ASP, pch=PCH_vec, cex = 0.8, xlab = 'PCOA axis 1',
      ylab = 'PCOA axis 2',main = paste0('A) ',genera_labels_to_test[3]),cex.axis = 0.8)
-abline(h=0,col='blue',lty=2)
-abline(v=0,col='blue',lty=2)
+abline(h=0,col='gray',lty=2)
+abline(v=0,col='gray',lty=2)
 
 plot(res_BC[[15]]$X_1, 
      res_BC[[15]]$Y_1, 
-     col = Y+1,asp=ASP, pch=PCH_vec, cex = 0.8, xlab = 'PCOA axis 1',
+     col = col_vector_GrayScale,asp=ASP, pch=PCH_vec, cex = 0.8, xlab = 'PCOA axis 1',
      ylab = 'PCOA axis 2',main = paste0('B) ',genera_labels_to_test[15]),cex.axis = 0.8)
-abline(h=0,col='blue',lty=2)
-abline(v=0,col='blue',lty=2)
+abline(h=0,col='gray',lty=2)
+abline(v=0,col='gray',lty=2)
 
 boxplot(res_ratio[[3]],main = paste0('C) ',genera_labels_to_test[3]),ylim = c(0,1),cex.axis = 0.8)
 

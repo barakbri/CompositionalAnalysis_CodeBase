@@ -28,7 +28,7 @@ The scripts make use of two RData objects of sOTU reads obtained from the deblur
    * `REFSIM_add_reference_selection_by_nr_counts.R` - **(#4)** An additional script used for running DACOMP with references such that $S_{crit}$ is set to have the lowest value, so that at least 100 counts are available in the reference taxa across all samples. Also tracks for the number of differentially abundant taxa entering the reference set. 
    * `validation_procedure_sim.R` - **(#5)** Script used for running the sim found in SM S6.2, checking the risk of differentially abundant taxa enter the reference set, whether the diagnostic check can detect the differentially abundant taxa, and whether testing can be done on a shrunken dataset without the differentially abundant taxa.
    * `REFSIM_Analyze_chance_of_bad_taxa.R` - **(#6)** RUN TO generate the table found in SM S6.4, describing the mean number of differentially abundant taxa that have erronuosly entered the reference set. Script is run after 1-5. Also - generates the results table for SM S6.2
-   * `REFSIM_Analyze_Results_Tables_V4.R` - **(#7)** RUN TO compile graphs and tables for Section 6 and the Supplementary Material, after running steps 1-4.
+   * `REFSIM_Analyze_Results_Tables.R` - **(#7)** RUN TO compile graphs and tables for Section 6 and the Supplementary Material, after running steps 1-4.
 
 ### Analyzing data from the Human Microbiome Project
    * `RDE_HMP_main.R` - **(#8)** RUN TO analyze results for the HMP dataset. This script calls `RDE_HMP_two_site_comparison.R` for each pair of body sites, and then outputs the results to a subdirectory under the results directory. See `RDE_Generate_Latex_tables.R` for processing outputs of this data example to a lateX table.
