@@ -17,6 +17,8 @@
 #MODE_COMPUTE_RANDOM_SELECT_FDR = F
 #SCENARIO_ID = 21 # see batch file for computed values
 
+
+# 2021/05/31 note that MODE_COMPUTE_GLOBAL_NULL is currently deprecated, and not supported anymore
 if(MODE_COMPUTE_GLOBAL_NULL & MODE_COMPUTE_RANDOM_SELECT_FDR){
   stop('MODE_COMPUTE_GLOBAL_NULL and MODE_COMPUTE_RANDOM_SELECT_FDR are mutually exclusive!')
 }
@@ -163,24 +165,6 @@ Worker_Function = function(core_nr){
     }
     
     #handle running the RVP, if needed by the defined mode:
-    if(MODE_COMPUTE_GLOBAL_NULL){
-      #select references:
-      ref_select = dacomp::dacomp.select_references(X = data$X,
-                                                    median_SD_threshold = ref_select_method_Median_SD_Threshold,
-                                                    minimal_TA = 10,
-                                                    maximal_TA = 200,
-                                                    Pseudo_Count_used = 1)
-      
-      Selected_References = ref_select$selected_references
-      #select the sub matrix of counts over the reference taxa
-      X_ref = data$X[,Selected_References,drop = F]
-      print(dim(X_ref))
-      #number of differentially abundant taxa in the current reference set selected:
-      CONTAINS_DIFF_ABUNDANT[b] = length(which(Selected_References %in% data$select_diff_abundant))
-      #compute RVP (and store results):
-      gn_res = compute_GlobalNull_Reference(X_ref,Y = data$Y,nr.perm = NR.Perms.GN) 
-      GN_NULL_LIST[[b]] = gn_res
-    }
   } # 
   
   return_object = list(TP_random_vec = TP_random_vec,
@@ -251,31 +235,6 @@ if(MODE_PROCESS_RESULTS){
       }    
     }  
   }
-  if(MODE_COMPUTE_GLOBAL_NULL){ #T1E of the RVP:
-    
-    #this is an auxiliary function used for computing the number of RVPs that rejected their 
-    #null hypothesis, but only for the cases where no diff abundanat taxa have entered the reference set
-    flatten_GN_NULL_LIST = function(l,contains_diff_abun){
-      temp = 1*(unlist(l[[1]]) < GlobalNull.Test.Alpha) * (contains_diff_abun[1] == 0)
-      if(length(l)>1){
-        for(i in 2:length(l)){
-          temp = temp +1*(unlist(l[[i]]) < GlobalNull.Test.Alpha) * (contains_diff_abun[i] == 0)
-        }
-      }
-      return(temp)
-    }
-    
-    #collect results over cores:
-    nr_reject_GN = flatten_GN_NULL_LIST(res[[1]]$GN_NULL_LIST,res[[1]]$CONTAINS_DIFF_ABUNDANT)
-    nr_GN_cases = sum(res[[1]]$CONTAINS_DIFF_ABUNDANT == 0)
-    if(length(res)>1){
-      for(i in 2:length(res)){
-        nr_reject_GN = nr_reject_GN + flatten_GN_NULL_LIST(res[[i]]$GN_NULL_LIST,res[[i]]$CONTAINS_DIFF_ABUNDANT)
-        nr_GN_cases = nr_GN_cases + sum(res[[i]]$CONTAINS_DIFF_ABUNDANT == 0)
-      }    
-    }  
-    nr_reject_GN = nr_reject_GN/nr_GN_cases # (NR_REPS_PER_WORKER*NR.WORKERS) is replaced by the actual number of valid (no DA inside) references
-  }
   
   #save to file
   if(MODE_COMPUTE_RANDOM_SELECT_FDR){
@@ -296,13 +255,6 @@ if(MODE_PROCESS_RESULTS){
     print('FDR -  most abundant- se')
     print(sd(combined_results_FDR_most_abundant)/sqrt(length(combined_results_FDR_most_abundant)))
     
-  }
-  if(MODE_COMPUTE_GLOBAL_NULL){
-    print('nr_reject_GN')
-    for(i in 1:length(nr_reject_GN))
-      print(round(nr_reject_GN[i],2))
-    print('Error in T1E estimation;2*SE')
-    print(round(1.96*sqrt(GlobalNull.Test.Alpha*(1-GlobalNull.Test.Alpha)/(nr_GN_cases)),3))  
   }
   sink()
   

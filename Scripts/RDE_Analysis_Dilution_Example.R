@@ -134,17 +134,63 @@ dilution_factor = dilution_factor[taxa_where_spike_in_is_not_all_sample]
 # create TSS,CSS and CLR normalizations of the data.
 #%%%%%%%%%%%%%%%%%
 
+
+# create a matrix of all outcomes, so we iterate over them, one by one
+Outcomes = list(S1 = S1, S3 = S3,dilution_factor = dilution_factor)
+
+
 library(dacomp) #load packages
 library(ALDEx2)
 
 #find references for dacomp
-ref_obj = dacomp::dacomp.select_references(X = reads_counts,median_SD_threshold = 0.5,minimal_TA = 20,maximal_TA = 200,verbose = T)
+ref_obj = dacomp::dacomp.select_references(X = reads_counts,
+                                           median_SD_threshold = 0.0001,
+                                           minimal_TA = 100,
+                                           maximal_TA = 200,
+                                           verbose = T)
+#length(ref_obj$selected_references) = 951
+#ref_obj$selected_MinAbundance = 107
+cleaned_reference_by_3 = dacomp.validate_references(X = reads_counts,
+                                               Y = Outcomes[[3]],
+                                               ref_obj = ref_obj,
+                                               test = DACOMP.TEST.NAME.SPEARMAN,
+                                               Q_validation = 0.1,
+                                               Minimal_Counts_in_ref_threshold = 10,
+                                               Reduction_Factor = 0.9,
+                                               Verbose = T,
+                                               disable_DSFDR = T)
+
+cleaned_reference_by_2 = dacomp.validate_references(X = reads_counts,
+                                                    Y = Outcomes[[2]],
+                                                    ref_obj = ref_obj,
+                                                    test = DACOMP.TEST.NAME.SPEARMAN,
+                                                    Q_validation = 0.1,
+                                                    Minimal_Counts_in_ref_threshold = 10,
+                                                    Reduction_Factor = 0.9,
+                                                    Verbose = T,
+                                                    disable_DSFDR = T)
+
+cleaned_reference_by_1 = dacomp.validate_references(X = reads_counts,
+                                                    Y = Outcomes[[1]],
+                                                    ref_obj = ref_obj,
+                                                    test = DACOMP.TEST.NAME.SPEARMAN,
+                                                    Q_validation = 0.1,
+                                                    Minimal_Counts_in_ref_threshold = 10,
+                                                    Reduction_Factor = 0.9,
+                                                    Verbose = T,
+                                                    disable_DSFDR = T)
+
 dacomp::dacomp.plot_reference_scores(ref_obj)
 ref_obj$selected_MinAbundance
-length(ref_obj$selected_references)
 
-# create a matrix of all outcomes, so we iterate over them, one by one
-Outcomes = list(S1 = S1, S3 = S3,dilution_factor = dilution_factor)
+if(!all.equal(
+length(ref_obj$selected_references),
+length(cleaned_reference_by_3),
+length(cleaned_reference_by_2),
+length(cleaned_reference_by_1)
+)){
+  stop('Stopping: validation procedure found discrepencies between cleanned references')
+}
 
 #create matrix for CSS normalized data
 X_CSS = t(metagenomeSeq::cumNormMat(t(reads_counts)))
@@ -275,6 +321,11 @@ xtable(TP_Table)
 
 xtable(FP_Table)
 
+sink(file = '../../Results/Dilution_Results.txt')
+xtable(TP_Table)
+
+xtable(FP_Table)
+sink()
 stop('DONE')
 
 #%%%%%%%%%%%%%%%%%

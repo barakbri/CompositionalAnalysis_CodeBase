@@ -13,15 +13,3 @@ for(s in SCENARIO_VEC){
   SCENARIO_ID = s
   source(file = paste0('REFSIM_compute_FDR_random_selection.R'), echo = F)
 }
-
-
-#Run simulations for estimating T1E for the RVP, discussed in appendix B.
-SCENARIO_VEC = c(2,3,12,16,17,21,26,27)
-
-MODE_COMPUTE_GLOBAL_NULL = T
-MODE_COMPUTE_RANDOM_SELECT_FDR = F
-
-for(s in SCENARIO_VEC){
-  SCENARIO_ID = s
-  source(file = paste0('REFSIM_compute_FDR_random_selection.R'), echo = F)
-}

@@ -45,19 +45,17 @@ Q = 0.1 #for BH
 
 MINIMAL_RATIO_OTHER = 0.025  #under this level of prevalence - taxa will be removed from the study
 AGG_LEVEL = 6 #Genus
-GLOBAL_RAREFACTION_QUANTILE = 0.1 # under this number - measurements will be discarded.
+GLOBAL_RAREFACTION_QUANTILE = 0.1 # when ordering samples by seq. depth, this lower percentile of measurements will be discarded. Actually, not related to rarefaction - not a good name
 # parameters for reference selection:
-MIN_TA = 10
-MAX_TA = 200
-MED_SD_THRES = 1.3
+MIN_TA = 100
+MAX_TA = 3000
 
 NR_PERMUTATIONS = 30000
 VERBOSE_MSGS = T
 
 results_to_save$parameters_list = list(Q = Q, MINIMAL_RATIO_OTHER = MINIMAL_RATIO_OTHER,
                                        AGG_LEVEL = AGG_LEVEL, GLOBAL_RAREFACTION_QUANTILE = GLOBAL_RAREFACTION_QUANTILE,
-                                       MIN_TA = MIN_TA,MAX_TA = MAX_TA,
-                                       MED_SD_THRES = MED_SD_THRES)
+                                       MIN_TA = MIN_TA,MAX_TA = MAX_TA)
 results_to_save$body_sites = list(Y0 = Y0,Y1 = Y1)
 results_to_save$computation_parameters = list(NR_PERMUTATIONS = NR_PERMUTATIONS)
 
@@ -194,7 +192,13 @@ results_to_save$taxa_sums = taxa_sums
 results_to_save$empty_taxa = which(taxa_sums == 0)
 
 #select references
-selected_references_obj = dacomp::dacomp.select_references(X = X_2,median_SD_threshold = MED_SD_THRES,minimal_TA = MIN_TA,maximal_TA = MAX_TA,select_from = 1:(ncol(X_2)),verbose = F,Pseudo_Count_used  = 1)
+selected_references_obj = dacomp::dacomp.select_references(X = X_2,
+                                                           median_SD_threshold = 0.0001,
+                                                           minimal_TA = MIN_TA,
+                                                           maximal_TA = MAX_TA,
+                                                           select_from = 1:(ncol(X_2)),
+                                                           verbose = F,
+                                                           Pseudo_Count_used  = 1)
 
 #plot histogram for selected references
 ref_analysis_save_file = paste0(HMP_RESULTS_DIR,"Ref_selection_analysis_",(Y0),"_",Y1,'.pdf')
@@ -202,9 +206,40 @@ pdf(file = ref_analysis_save_file,width = 8,height = 5)
 plot_ref_select_scores(selected_references_obj,label = "") #paste0('Reference Selection for methods: ',(Y0),"_",Y1)
 dev.off()
 
+library(latex2exp)
+
+ref_reads_by_s_crit_save_file = paste0(HMP_RESULTS_DIR,"Ref_selection_analysis_",(Y0),"_",Y1,'.pdf')
+pdf(file = ref_reads_by_s_crit_save_file,width = 8,height = 5)
+plot(sort(selected_references_obj$scores),selected_references_obj$min_abundance_over_the_sorted,main = '',xlab = TeX("S_{crit}"),ylab = "Min. counts in reference",pch=20,cex=0.3)
+dev.off()
+
+
+
 results_to_save$selected_references_obj = selected_references_obj
 
+
 selected_references = selected_references_obj$selected_references
+results_to_save$selected_references = selected_references
+
+selected_references_cleaned = dacomp.validate_references(X = X_2,Y = Y,
+                                                 ref_obj = selected_references_obj,
+                                                 test = DACOMP.TEST.NAME.WILCOXON,Q_validation = 0.1,
+                                                 Minimal_Counts_in_ref_threshold = 20,
+                                                 Reduction_Factor = 0.9,NR_perm = 30000,
+                                                 Verbose = F,
+                                                 disable_DSFDR =T)
+
+
+L1O_res = leave_one_out_validation(X = X_2,Y = Y,ref_obj_for_validation = selected_references_obj,test = DACOMP.TEST.NAME.WILCOXON,Q = 0.1,NR_PERMS = 30000,Verbose = F)
+L1O_res_cleaned = leave_one_out_validation(X = X_2,Y = Y,ref_obj_for_validation = selected_references_cleaned,test = DACOMP.TEST.NAME.WILCOXON,Q = 0.1,NR_PERMS = 30000,Verbose = F)
+
+results_to_save$nr_contamination_ref = length(which(p.adjust(L1O_res$pval.vec,method = 'BH')<=0.1))
+results_to_save$nr_contamination_ref_cleaned = length(which(p.adjust(L1O_res_cleaned$pval.vec,method = 'BH')<=0.1))
+
+results_to_save$selected_references_cleaned = selected_references_cleaned #the "cleaned version"
+results_to_save$nr_removed_from_ref = length(selected_references_obj$selected_references) - length(selected_references_cleaned)
+
+
 if(!is.null(selected_references) & length(selected_references) <= dim(X_2)[2] - 2 ){ #if we have a valid set of refernces, perform analysis:
   ref_values = NULL
   if(length(selected_references)>1){
@@ -239,13 +274,29 @@ if(!is.null(selected_references) & length(selected_references) <= dim(X_2)[2] - 
   
   rejected_by_pval_Welch = which(p.adjust(res_dsfdr$p.values.test,method = 'BH') <= Q)
   rejected_by_pval_division_Welch = which(p.adjust(res_dsfdr$p.values.test.ratio.normalization,method = 'BH') <= Q)
-  
+
   results_to_save$rejected = rejected
   results_to_save$rejected_by_pval = rejected_by_pval
   results_to_save$rejected_by_pval_division = rejected_by_pval_division
   results_to_save$rejected_by_pval_Welch = rejected_by_pval_Welch
   results_to_save$rejected_by_pval_division_Welch = rejected_by_pval_division_Welch
 
+  
+  #Post - hoc analysis with reduced reference
+  res_dsfdr_cleaned = dacomp.test(X = X_2,
+                                 y = Y,
+                                 ind_reference_taxa = selected_references_cleaned,
+                                 test = DACOMP.TEST.NAME.WILCOXON,
+                                 q = Q,
+                                 nr_perm = 30000,
+                                 verbose = F)
+  
+  pvalues_cleaned = res_dsfdr_cleaned$p.values.test
+  pvalues_cleaned[selected_references_cleaned] = NA
+  nr_rejections_cleaned = length(which(p.adjust(pvalues_cleaned,method = 'BH')<=Q))
+  results_to_save$res_dsfdr_cleaned = res_dsfdr_cleaned
+  results_to_save$nr_rejections_cleaned = nr_rejections_cleaned
+  
 }
 
 
@@ -321,30 +372,6 @@ results_to_save$prevalence_shared_discoveries = prevalence_shared_discoveries
 results_to_save$prevalence_ANCOM_UNIQUE_discoveries = prevalence_ANCOM_UNIQUE_discoveries
 results_to_save$prevalence_ANCOM_in_ref = prevalence_ANCOM_in_ref
 
-#compare to subset - run the method on 2/3 of the observations - check how power is affected
-
-subset_ratio = 2/3
-subset_size = ceiling(nrow(X_2)*subset_ratio)
-selected_for_subset = sample(1:nrow(X_2),size = subset_size)
-X_2_subset = X_2[selected_for_subset,]
-Y_subset = Y[selected_for_subset]
-
-selected_references_obj_subset = dacomp.select_references(X = X_2_subset,median_SD_threshold = MED_SD_THRES,minimal_TA = MIN_TA,maximal_TA = MAX_TA,select_from = 1:(ncol(X_2_subset)))
-
-
-res_dsfdr_subset = dacomp.test(X = X_2_subset,
-                               y = Y_subset,
-                               ind_reference_taxa = as.numeric(selected_references_obj_subset$selected_references),
-                               test = DACOMP.TEST.NAME.WILCOXON,
-                               q = Q,
-                              nr_perm = max(ceiling(1/(Q/(dim(X_2)[2]))),1000),
-                              verbose = F)
-
-pvalues_subset = res_dsfdr_subset$p.values
-pvalues_subset[selected_references_obj_subset$selected_references] = NA
-nr_rejections_subset = length(which(p.adjust(pvalues_subset,method = 'BH')<=Q))
-results_to_save$res_dsfdr_subset = res_dsfdr_subset
-results_to_save$nr_rejections_subset = nr_rejections_subset
 
 ####
 #Section V: Wilcoxon
